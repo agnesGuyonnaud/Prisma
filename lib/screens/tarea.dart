@@ -105,7 +105,8 @@ class _TareaScreenState extends State<TareaScreen> {
     // Conserva el modo claro/oscuro de la aplicación y genera pares de colores
     // de fondo y texto a partir del morado de referencia.
     final colores = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF4834B6),
+      seedColor: const Color(0xFF6674E8),
+      primary: const Color(0xFF6674E8), secondary: const Color(0xFFBAE147),
       brightness: Theme.of(context).brightness,
     );
     return Theme(
@@ -208,7 +209,7 @@ class _TareaScreenState extends State<TareaScreen> {
                               child: Chip(
                                 // Usamos el par primaryContainer/onPrimaryContainer
                                 // para una etiqueta morada con contraste tonal.
-                                backgroundColor: colores.primaryContainer,
+                                backgroundColor: const Color(0xFFBAE147),
                                 side: BorderSide.none,
                                 // Un texto más grande y seminegrita mejora la
                                 // lectura de la asignatura en pantallas móviles.

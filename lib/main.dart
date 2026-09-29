@@ -25,7 +25,7 @@ class MainApp extends StatelessWidget {
       // La paleta parte del morado de referencia; no depende del fondo del móvil.
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4834B6)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6674E8), primary: const Color(0xFF6674E8), secondary: const Color(0xFFBAE147),),
       ),
       home: HomeScreen(repositorio: repositorio),
     );

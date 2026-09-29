@@ -23,7 +23,7 @@ class TareaMini extends StatelessWidget {
     required this.asignatura,
     required this.fechaLimite,
     required this.tipo,
-    this.colorAsignatura = const Color(0xFF4834B6),
+    this.colorAsignatura = const Color(0xFFBAE147),
     this.completada = false,
     this.totalSubtareas = 0,
     this.subtareasCompletadas = 0,
