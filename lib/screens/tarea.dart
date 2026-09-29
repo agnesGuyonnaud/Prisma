@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/tareas_repository.dart';
 import '../models/tarea_model.dart';
 import '../utils/fecha_tarea.dart';
+import '../widgets/importancia_slider.dart';
 import 'tarea_formulario.dart';
 
 /// Detalle de la tarea seleccionada, con cambios persistidos en SQLite.
@@ -24,6 +25,7 @@ class TareaScreen extends StatefulWidget {
 class _TareaScreenState extends State<TareaScreen> {
   late Tarea _tarea;
   bool _guardando = false;
+  int? _importanciaTemporal;
 
   @override
   void initState() {
@@ -60,6 +62,15 @@ class _TareaScreenState extends State<TareaScreen> {
     } finally {
       if (mounted) setState(() => _guardando = false);
     }
+  }
+
+  Future<void> _cambiarImportancia(int valor) async {
+    // El deslizador responde al movimiento, pero escribe solo al soltarlo.
+    if (valor != _tarea.importancia) {
+      await _guardarCambio(_tarea.copyWith(importancia: valor));
+    }
+    // Si falló la escritura, vuelve a mostrar el último valor guardado.
+    if (mounted) setState(() => _importanciaTemporal = null);
   }
 
   Future<void> _eliminar() async {
@@ -106,7 +117,8 @@ class _TareaScreenState extends State<TareaScreen> {
     // de fondo y texto a partir del morado de referencia.
     final colores = ColorScheme.fromSeed(
       seedColor: const Color(0xFF6674E8),
-      primary: const Color(0xFF6674E8), secondary: const Color(0xFFBAE147),
+      primary: const Color(0xFF6674E8),
+      secondary: const Color(0xFFBAE147),
       brightness: Theme.of(context).brightness,
     );
     return Theme(
@@ -239,10 +251,19 @@ class _TareaScreenState extends State<TareaScreen> {
                           etiqueta: 'Tipo',
                           valor: _tarea.tipo,
                         ),
-                        _DatoTarea(
-                          icono: Icons.flag_outlined,
-                          etiqueta: 'Importancia',
-                          valor: _tarea.importancia.etiqueta,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: ImportanciaSlider(
+                            valor: _importanciaTemporal ?? _tarea.importancia,
+                            onChanged: _guardando
+                                ? null
+                                : (valor) => setState(
+                                    () => _importanciaTemporal = valor,
+                                  ),
+                            onChangeEnd: _guardando
+                                ? null
+                                : _cambiarImportancia,
+                          ),
                         ),
                         // El estado puede cambiarse sin abrir todo el formulario.
                         PopupMenuButton<EstadoTarea>(

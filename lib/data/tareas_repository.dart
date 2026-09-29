@@ -32,24 +32,54 @@ class TareasRepository {
     return proveedor.openDatabase(
       ubicacion,
       options: OpenDatabaseOptions(
-        version: 1,
-        onCreate: (db, version) async {
-          await db.execute('''
-            CREATE TABLE tareas (
+        version: 2,
+        onCreate: (db, version) => _crearTabla(db, 'tareas'),
+        // sqflite ejecuta la migración en una transacción: ante un fallo,
+        // conserva íntegra la base anterior y permite reintentar su apertura.
+        onUpgrade: (db, anterior, nueva) async {
+          if (anterior < 2) {
+            await _crearTabla(db, 'tareas_v2');
+            await db.execute('''
+              INSERT INTO tareas_v2
+                (id, titulo, asignatura, fecha_limite, tipo, importancia, estado, subtareas)
+              SELECT id, titulo, asignatura, fecha_limite, tipo,
+                CASE importancia
+                  WHEN 'baja' THEN 1
+                  WHEN 'media' THEN 3
+                  WHEN 'alta' THEN 5
+                  ELSE CAST(importancia AS INTEGER)
+                END,
+                estado, subtareas
+              FROM tareas
+            ''');
+            // Mantiene la secuencia de ids incluso si la última tarea se borró.
+            await db.execute('''
+              UPDATE sqlite_sequence SET seq = MAX(seq, COALESCE(
+                (SELECT seq FROM sqlite_sequence WHERE name = 'tareas'), 0))
+              WHERE name = 'tareas_v2'
+            ''');
+            await db.execute('DROP TABLE tareas');
+            await db.execute('ALTER TABLE tareas_v2 RENAME TO tareas');
+          }
+        },
+      ),
+    );
+  }
+
+  Future<void> _crearTabla(Database db, String nombre) => db.execute('''
+            CREATE TABLE $nombre (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               titulo TEXT NOT NULL,
               asignatura TEXT NOT NULL,
               fecha_limite INTEGER NOT NULL,
               tipo TEXT NOT NULL,
-              importancia TEXT NOT NULL,
+              importancia INTEGER NOT NULL CHECK (
+                typeof(importancia) = 'integer' AND importancia BETWEEN 1 AND 5
+              ),
               estado TEXT NOT NULL,
               subtareas TEXT NOT NULL
             )
           ''');
-        },
-      ),
-    );
-  }
 
   Future<List<Tarea>> listar() async {
     final db = await _database();

@@ -1,14 +1,5 @@
 import 'dart:convert';
 
-enum ImportanciaTarea {
-  baja('Baja'),
-  media('Media'),
-  alta('Alta');
-
-  const ImportanciaTarea(this.etiqueta);
-  final String etiqueta;
-}
-
 enum EstadoTarea {
   pendiente('Pendiente'),
   enProgreso('En progreso'),
@@ -40,17 +31,20 @@ class Tarea {
     required this.asignatura,
     required this.fechaLimite,
     required this.tipo,
-    this.importancia = ImportanciaTarea.media,
+    this.importancia = 3,
     this.estado = EstadoTarea.pendiente,
     List<Subtarea> subtareas = const [],
-  }) : subtareas = List.unmodifiable(subtareas);
+  }) : subtareas = List.unmodifiable(subtareas) {
+    RangeError.checkValueInInterval(importancia, 1, 5, 'importancia');
+  }
 
   final int? id;
   final String titulo;
   final String asignatura;
   final DateTime fechaLimite;
   final String tipo;
-  final ImportanciaTarea importancia;
+  // Entero de 1 (menos importante) a 5 (más importante).
+  final int importancia;
   final EstadoTarea estado;
   final List<Subtarea> subtareas;
 
@@ -62,7 +56,7 @@ class Tarea {
     String? asignatura,
     DateTime? fechaLimite,
     String? tipo,
-    ImportanciaTarea? importancia,
+    int? importancia,
     EstadoTarea? estado,
     List<Subtarea>? subtareas,
   }) => Tarea(
@@ -84,7 +78,7 @@ class Tarea {
     'asignatura': asignatura,
     'fecha_limite': fechaLimite.millisecondsSinceEpoch,
     'tipo': tipo,
-    'importancia': importancia.name,
+    'importancia': importancia,
     'estado': estado.name,
     'subtareas': jsonEncode(subtareas.map((s) => s.toMap()).toList()),
   };
@@ -97,7 +91,7 @@ class Tarea {
       map['fecha_limite'] as int,
     ),
     tipo: map['tipo'] as String,
-    importancia: ImportanciaTarea.values.byName(map['importancia'] as String),
+    importancia: map['importancia'] as int,
     estado: EstadoTarea.values.byName(map['estado'] as String),
     subtareas: (jsonDecode(map['subtareas'] as String) as List)
         .map((s) => Subtarea.fromMap(s as Map<String, dynamic>))

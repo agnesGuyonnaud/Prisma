@@ -24,7 +24,11 @@ del módulo de asignaturas, lo que requerirá una migración de la base de datos
 El repositorio guarda en `prisma_tareas.db`, dentro del directorio privado de bases
 de datos de la aplicación. No se solicitan permisos de almacenamiento compartido.
 La tabla `tareas` contiene todos los campos de la tarea y sus subtareas en JSON;
-una escritura guarda el conjunto de forma atómica. El esquema tiene versión 1.
+una escritura guarda el conjunto de forma atómica. El esquema tiene versión 2.
+La importancia se guarda como entero entre 1 y 5 (3 por defecto). Se elige con
+un slider en el formulario o en el detalle; en el detalle se guarda al soltarlo.
+La migración desde la versión 1 convierte baja → 1, media → 3 y alta → 5,
+conservando los identificadores y los demás datos de las tareas.
 No hay que eliminar el archivo para actualizar la app: futuros cambios del esquema
 deben aumentar la versión y añadir una migración.
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/tareas_repository.dart';
 import '../models/tarea_model.dart';
 import '../utils/fecha_tarea.dart';
+import '../widgets/importancia_slider.dart';
 
 /// El mismo formulario sirve para crear una tarea y editar una ya guardada.
 class TareaFormulario extends StatefulWidget {
@@ -21,7 +22,7 @@ class _TareaFormularioState extends State<TareaFormulario> {
   String? _asignatura;
   late DateTime _fecha;
   late String _tipo;
-  late ImportanciaTarea _importancia;
+  late int _importancia;
   late EstadoTarea _estado;
   late final List<_SubtareaEditable> _subtareas;
   bool _guardando = false;
@@ -51,7 +52,7 @@ class _TareaFormularioState extends State<TareaFormulario> {
         tarea?.fechaLimite ??
         DateTime(hoy.year, hoy.month, hoy.day + 1, 23, 59);
     _tipo = tarea?.tipo ?? 'Tarea';
-    _importancia = tarea?.importancia ?? ImportanciaTarea.media;
+    _importancia = tarea?.importancia ?? 3;
     _estado = tarea?.estado ?? EstadoTarea.pendiente;
     _subtareas = [
       for (final subtarea in tarea?.subtareas ?? <Subtarea>[])
@@ -230,23 +231,11 @@ class _TareaFormularioState extends State<TareaFormulario> {
                       : (valor) => setState(() => _tipo = valor!),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<ImportanciaTarea>(
-                  initialValue: _importancia,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Importancia',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: [
-                    for (final importancia in ImportanciaTarea.values)
-                      DropdownMenuItem(
-                        value: importancia,
-                        child: Text(importancia.etiqueta),
-                      ),
-                  ],
+                ImportanciaSlider(
+                  valor: _importancia,
                   onChanged: _guardando
                       ? null
-                      : (valor) => setState(() => _importancia = valor!),
+                      : (valor) => setState(() => _importancia = valor),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<EstadoTarea>(
