@@ -97,4 +97,16 @@ class Tarea {
         .map((s) => Subtarea.fromMap(s as Map<String, dynamic>))
         .toList(),
   );
+
+  bool isUrgente() {
+    return fechaLimite.difference(DateTime.now()).inDays < 3;
+  }
+
+  double getImportanceEmergencyScore(DateTime now) {
+    const iFactor = 2.0;
+    const eFactor = 1.0;
+    final diasRestantes = fechaLimite.difference(now).inHours / 24.0;
+    return (importancia * iFactor) /
+        ((diasRestantes.clamp(0, double.infinity) + 1) * eFactor);
+  }
 }

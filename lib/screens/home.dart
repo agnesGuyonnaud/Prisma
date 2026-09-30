@@ -138,9 +138,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   }
+                  var now = DateTime.now();
+                  final tareasOrdenadas = [...tareas]
+                    ..sort(
+                      (a, b) => b
+                          .getImportanceEmergencyScore(now)
+                          .compareTo(a.getImportanceEmergencyScore(now)),
+                    );
                   return Column(
                     children: [
-                      for (final tarea in tareas)
+                      for (final tarea in tareasOrdenadas)
                         Padding(
                           key: ValueKey(tarea.id),
                           padding: const EdgeInsets.only(bottom: 12),
