@@ -66,10 +66,10 @@ class _HomeScreenState extends State<HomeScreen> {
         // las tareas, también cuando la ventana supera los 600 dp de ancho.
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: ListView(
-            // Permite desplazar la última tarjeta por encima del FAB.
-            padding: const EdgeInsets.only(bottom: 88),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Cabecera fija: no forma parte de la lista desplazable.
               Row(
                 children: [
                   Expanded(
@@ -98,57 +98,57 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 32),
               Text('Tareas', style: tema.textTheme.titleMedium),
               const SizedBox(height: 8),
-              // Solo texto de referencia: todavía no abre una lista.
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'Ver todas las tareas →',
-                  style: tema.textTheme.bodySmall?.copyWith(
-                    color: colores.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              FutureBuilder<List<Tarea>>(
-                future: _tareas,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Column(
-                      children: [
-                        const Text('No se pudieron cargar tus tareas.'),
-                        TextButton(
-                          onPressed: _recargar,
-                          child: const Text('Reintentar'),
+              // El ListView solo contiene la lista de tareas.
+              Expanded(
+                child: FutureBuilder<List<Tarea>>(
+                  future: _tareas,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('No se pudieron cargar tus tareas.'),
+                            TextButton(
+                              onPressed: _recargar,
+                              child: const Text('Reintentar'),
+                            ),
+                          ],
                         ),
-                      ],
-                    );
-                  }
-                  final tareas = snapshot.data ?? [];
-                  if (tareas.isEmpty) {
-                    return const Card.filled(
-                      margin: EdgeInsets.zero,
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                          'Aún no tienes tareas. Pulsa “Añadir tarea” para crear la primera.',
+                      );
+                    }
+                    final tareas = snapshot.data ?? [];
+                    if (tareas.isEmpty) {
+                      return const Align(
+                        alignment: Alignment.topCenter,
+                        child: Card.filled(
+                          margin: EdgeInsets.zero,
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text(
+                              'Aún no tienes tareas. Pulsa “Añadir tarea” para crear la primera.',
+                            ),
+                          ),
                         ),
-                      ),
-                    );
-                  }
-                  var now = DateTime.now();
-                  final tareasOrdenadas = [...tareas]
-                    ..sort(
-                      (a, b) => b
-                          .getImportanceEmergencyScore(now)
-                          .compareTo(a.getImportanceEmergencyScore(now)),
-                    );
-                  return Column(
-                    children: [
-                      for (final tarea in tareasOrdenadas)
-                        Padding(
+                      );
+                    }
+                    final now = DateTime.now();
+                    final tareasOrdenadas = [...tareas]
+                      ..sort(
+                        (a, b) => b
+                            .getImportanceEmergencyScore(now)
+                            .compareTo(a.getImportanceEmergencyScore(now)),
+                      );
+                    return ListView.builder(
+                      // Permite desplazar la última tarjeta por encima del FAB.
+                      padding: const EdgeInsets.only(bottom: 88),
+                      itemCount: tareasOrdenadas.length,
+                      itemBuilder: (context, index) {
+                        final tarea = tareasOrdenadas[index];
+                        return Padding(
                           key: ValueKey(tarea.id),
                           padding: const EdgeInsets.only(bottom: 12),
                           child: TareaMini(
@@ -164,10 +164,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             subtareasCompletadas: tarea.subtareasCompletadas,
                             onTap: () => _abrirTarea(tarea),
                           ),
-                        ),
-                    ],
-                  );
-                },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -181,9 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       // endFloat ya aporta 16 dp desde el borde seguro: no duplicar el margen.
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      // Barra de referencia visual: Inicio permanece seleccionado.
-      // Sin onDestinationSelected, las opciones no cambian la vista ni la selección.
-      // El fondo llega al borde; el contenido conserva 16 dp a cada lado.
+      // (bottomNavigationBar sin cambios)
       bottomNavigationBar: ColoredBox(
         color: colores.surfaceContainer,
         child: Padding(
