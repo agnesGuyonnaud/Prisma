@@ -6,6 +6,9 @@ import '../widgets/tarea_list.dart';
 import 'tarea.dart';
 import 'tarea_formulario.dart';
 
+final RouteObserver<ModalRoute<dynamic>> homeRouteObserver =
+    RouteObserver<ModalRoute<dynamic>>();
+
 /// Home que consulta las tareas locales y abre sus formularios y detalles.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, this.repositorio});
@@ -16,15 +19,36 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
   late final TareasRepository _repositorio;
   late Future<List<Tarea>> _tareas;
+  ModalRoute<dynamic>? _ruta;
 
   @override
   void initState() {
     super.initState();
     _repositorio = widget.repositorio ?? TareasRepository.instancia;
     _tareas = _repositorio.listar();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final ruta = ModalRoute.of(context);
+    if (ruta != _ruta) {
+      if (_ruta != null) homeRouteObserver.unsubscribe(this);
+      _ruta = ruta;
+      if (ruta != null) homeRouteObserver.subscribe(this, ruta);
+    }
+  }
+
+  @override
+  void didPopNext() => _recargar();
+
+  @override
+  void dispose() {
+    homeRouteObserver.unsubscribe(this);
+    super.dispose();
   }
 
   void _recargar() {
@@ -36,12 +60,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _crearTarea() async {
-    final guardada = await Navigator.of(context).push<Tarea>(
+    await Navigator.of(context).push<Tarea>(
       MaterialPageRoute(
         builder: (_) => TareaFormulario(repositorio: _repositorio),
       ),
     );
-    if (guardada != null) _recargar();
   }
 
   Future<void> _abrirTarea(Tarea tarea) async {
@@ -50,8 +73,6 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (_) => TareaScreen(tarea: tarea, repositorio: _repositorio),
       ),
     );
-    // Refleja las ediciones, los cambios de subtareas y las eliminaciones.
-    _recargar();
   }
 
   @override
