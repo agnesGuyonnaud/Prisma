@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../data/tareas_repository.dart';
+import '../models/tarea_model.dart';
 import '../widgets/tarea_list.dart';
-import 'matriz.dart';
+import 'tarea.dart';
 import 'tarea_formulario.dart';
+
+final RouteObserver<ModalRoute<dynamic>> homeRouteObserver =
+    RouteObserver<ModalRoute<dynamic>>();
 
 /// Home que consulta las tareas locales y abre sus formularios y detalles.
 class HomeScreen extends StatefulWidget {
@@ -15,27 +19,60 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
   late final TareasRepository _repositorio;
+  late Future<List<Tarea>> _tareas;
+  ModalRoute<dynamic>? _ruta;
 
   @override
   void initState() {
     super.initState();
     _repositorio = widget.repositorio ?? TareasRepository.instancia;
+    _tareas = _repositorio.listar();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final ruta = ModalRoute.of(context);
+    if (ruta != _ruta) {
+      if (_ruta != null) homeRouteObserver.unsubscribe(this);
+      _ruta = ruta;
+      if (ruta != null) homeRouteObserver.subscribe(this, ruta);
+    }
+  }
+
+  @override
+  void didPopNext() => _recargar();
+
+  @override
+  void dispose() {
+    homeRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  void _recargar() {
+    if (!mounted) return;
+    final consulta = _repositorio.listar();
+    setState(() {
+      _tareas = consulta;
+    });
   }
 
   Future<void> _crearTarea() async {
-    await Navigator.of(context).push<void>(
+    await Navigator.of(context).push<Tarea>(
       MaterialPageRoute(
         builder: (_) => TareaFormulario(repositorio: _repositorio),
       ),
     );
   }
 
-  Future<void> _abrirMatriz() async {
-    if (!mounted) return;
-    await Navigator.of(context)
-        .push<void>(MaterialPageRoute<void>(builder: (_) => MatrizScreen()));
+  Future<void> _abrirTarea(Tarea tarea) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => TareaScreen(tarea: tarea, repositorio: _repositorio),
+      ),
+    );
   }
 
   @override
@@ -81,7 +118,57 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 32),
               Text('Tareas', style: tema.textTheme.titleMedium),
               const SizedBox(height: 8),
-              Expanded(child: TareaList(repositorio: _repositorio)),
+              // El ListView solo contiene la lista de tareas.
+              Expanded(
+                child: FutureBuilder<List<Tarea>>(
+                  future: _tareas,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('No se pudieron cargar tus tareas.'),
+                            TextButton(
+                              onPressed: _recargar,
+                              child: const Text('Reintentar'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    final tareas = snapshot.data ?? [];
+                    if (tareas.isEmpty) {
+                      return const Align(
+                        alignment: Alignment.topCenter,
+                        child: Card.filled(
+                          margin: EdgeInsets.zero,
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text(
+                              'Aún no tienes tareas. Pulsa “Añadir tarea” para crear la primera.',
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    final now = DateTime.now();
+                    final tareasOrdenadas = [...tareas]
+                      ..sort(
+                        (a, b) => b
+                            .getImportanceEmergencyScore(now)
+                            .compareTo(a.getImportanceEmergencyScore(now)),
+                      );
+                    return TareaList(
+                      tareasOrdenadas: tareasOrdenadas,
+                      repositorio: _repositorio,
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -102,9 +189,6 @@ class _HomeScreenState extends State<HomeScreen> {
           child: NavigationBar(
             backgroundColor: colores.surfaceContainer,
             selectedIndex: 0,
-            onDestinationSelected: (index) {
-              if (index == 1) _abrirMatriz();
-            },
             destinations: const [
               NavigationDestination(
                 icon: Icon(Icons.home_outlined),
