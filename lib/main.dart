@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/tareas_repository.dart';
 import 'screens/home.dart';
+import 'widgets/tarea_list.dart';
 
 void main() {
   runApp(const MainApp());
@@ -21,7 +22,7 @@ class MainApp extends StatelessWidget {
       locale: const Locale('es'),
       supportedLocales: const [Locale('es')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      navigatorObservers: [homeRouteObserver],
+      navigatorObservers: [tareasRouteObserver],
       // Genera superficies, colores de texto y estados coherentes con Material 3.
       // La paleta parte del morado de referencia; no depende del fondo del móvil.
       theme: ThemeData(
