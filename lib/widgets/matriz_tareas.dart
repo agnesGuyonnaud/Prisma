@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/cadran.dart';
 import '../models/tarea_model.dart';
 import '../widgets/tarea_list.dart';
 
@@ -9,28 +10,28 @@ class MatrizTareas extends StatelessWidget {
   final List<Tarea> tareas;
 
   static const _cadranes = [
-    _Cadran(
+    Cadran(
       titulo: 'Importante y urgente',
       descripcion: 'Hacer ahora',
       importante: true,
       urgente: true,
       color: Color(0xFFF3C5B8),
     ),
-    _Cadran(
+    Cadran(
       titulo: 'Importante, no urgente',
       descripcion: 'Planificar',
       importante: true,
       urgente: false,
       color: Color(0xFFD7E8BD),
     ),
-    _Cadran(
+    Cadran(
       titulo: 'No importante, urgente',
       descripcion: 'Delegar',
       importante: false,
       urgente: true,
       color: Color(0xFFF4E0A5),
     ),
-    _Cadran(
+    Cadran(
       titulo: 'No importante, no urgente',
       descripcion: 'Reducir o eliminar',
       importante: false,
@@ -39,7 +40,7 @@ class MatrizTareas extends StatelessWidget {
     ),
   ];
 
-  List<Tarea> _tareasDelCadran(_Cadran cadran) => tareas.where((tarea) {
+  List<Tarea> _tareasDelCadran(Cadran cadran) => tareas.where((tarea) {
     final importante = tarea.importancia >= 3;
     return importante == cadran.importante &&
         tarea.isUrgente() == cadran.urgente;
@@ -66,8 +67,7 @@ class MatrizTareas extends StatelessWidget {
           child: InkWell(
             onTap: () => Navigator.of(context).push<void>(
               MaterialPageRoute<void>(
-                builder: (_) =>
-                    _ListaCadranScreen(cadran: cadran, tareas: tareasCadran),
+                builder: (_) => _ListaCadranScreen(cadran: cadran),
               ),
             ),
             child: Padding(
@@ -105,33 +105,11 @@ class MatrizTareas extends StatelessWidget {
     );
   }
 }
-/* 
-class MatrizTareasScreen extends StatelessWidget {
-  const MatrizTareasScreen({super.key, required this.tareas});
-
-  final List<Tarea> tareas;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Matriz de tareas'),
-        leading: IconButton(
-          tooltip: 'Volver',
-          icon: const BackButtonIcon(),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: MatrizTareas(tareas: tareas),
-    );
-  }
-} */
 
 class _ListaCadranScreen extends StatelessWidget {
-  const _ListaCadranScreen({required this.cadran, required this.tareas});
+  const _ListaCadranScreen({required this.cadran});
 
-  final _Cadran cadran;
-  final List<Tarea> tareas;
+  final Cadran cadran;
 
   @override
   Widget build(BuildContext context) {
@@ -144,12 +122,10 @@ class _ListaCadranScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: tareas.isEmpty
-          ? const Center(child: Text('No hay tareas en este cuadrante.'))
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: TareaList(/* tareasOrdenadas: tareas */),
-            ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: TareaList(cadran: cadran /* tareasOrdenadas: tareas */),
+      ),
 
       /* final now = DateTime.now();
                     final tareasOrdenadas = [...tareas]
@@ -164,20 +140,4 @@ class _ListaCadranScreen extends StatelessWidget {
                     ); */
     );
   }
-}
-
-class _Cadran {
-  const _Cadran({
-    required this.titulo,
-    required this.descripcion,
-    required this.importante,
-    required this.urgente,
-    required this.color,
-  });
-
-  final String titulo;
-  final String descripcion;
-  final bool importante;
-  final bool urgente;
-  final Color color;
 }

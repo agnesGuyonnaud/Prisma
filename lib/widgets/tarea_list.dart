@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/tareas_repository.dart';
 import '../models/tarea_model.dart';
+import '../models/cadran.dart';
 import '../utils/fecha_tarea.dart';
 import 'tarea_mini.dart';
 import '../screens/tarea.dart';
@@ -10,11 +11,11 @@ final RouteObserver<ModalRoute<dynamic>> tareasRouteObserver =
     RouteObserver<ModalRoute<dynamic>>();
 
 class TareaList extends StatefulWidget {
-  const TareaList({super.key, this.repositorio, this.tareasOrdenadas})
+  const TareaList({super.key, this.repositorio, this.cadran})
   /* : assert(repositorio != null || tareasOrdenadas != null) */;
 
   final TareasRepository? repositorio;
-  final List<Tarea>? tareasOrdenadas;
+  final Cadran? cadran;
 
   @override
   State<TareaList> createState() => _TareaListState();
@@ -66,6 +67,13 @@ class _TareaListState extends State<TareaList> with RouteAware {
     });
   }
 
+  List<Tarea> _filterByCadran(List<Tarea> tareas, Cadran cadran) =>
+      tareas.where((tarea) {
+        final importante = tarea.importancia >= 3;
+        return importante == cadran.importante &&
+            tarea.isUrgente() == cadran.urgente;
+      }).toList();
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<Tarea>>(
@@ -106,7 +114,15 @@ class _TareaListState extends State<TareaList> with RouteAware {
         }
 
         final now = DateTime.now();
-        final tareasOrdenadas = [...tareas]
+        final tareasToDisplay = (widget.cadran != null)
+            ? _filterByCadran(tareas, widget.cadran!)
+            : tareas;
+
+        if (tareasToDisplay.isEmpty) {
+          return Center(child: Text('No hay tareas en este cuadrante.'));
+        }
+
+        final tareasOrdenadas = [...tareasToDisplay]
           ..sort(
             (a, b) => b
                 .getImportanceEmergencyScore(now)
