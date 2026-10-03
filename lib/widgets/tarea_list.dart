@@ -11,7 +11,7 @@ final RouteObserver<ModalRoute<dynamic>> tareasRouteObserver =
 
 class TareaList extends StatefulWidget {
   const TareaList({super.key, this.repositorio, this.tareasOrdenadas})
-    : assert(repositorio != null || tareasOrdenadas != null);
+  /* : assert(repositorio != null || tareasOrdenadas != null) */;
 
   final TareasRepository? repositorio;
   final List<Tarea>? tareasOrdenadas;
@@ -24,11 +24,15 @@ class _TareaListState extends State<TareaList> with RouteAware {
   late Future<List<Tarea>> _tareas;
   ModalRoute<dynamic>? _ruta;
 
+  late final TareasRepository _repositorio;
+
   @override
   void initState() {
     super.initState();
-    _tareas =
-        widget.repositorio?.listar() ?? Future.value(widget.tareasOrdenadas!);
+
+    _repositorio = widget.repositorio ?? TareasRepository.instancia;
+    _tareas = _repositorio
+        .listar() /*  ?? Future.value(widget.tareasOrdenadas!) */;
   }
 
   @override
@@ -44,7 +48,7 @@ class _TareaListState extends State<TareaList> with RouteAware {
 
   @override
   void didPopNext() {
-    if (widget.repositorio != null) _recargar();
+    _recargar();
   }
 
   @override
@@ -54,8 +58,8 @@ class _TareaListState extends State<TareaList> with RouteAware {
   }
 
   void _recargar() {
-    final repositorio = widget.repositorio;
-    if (!mounted || repositorio == null) return;
+    final repositorio = _repositorio;
+    if (!mounted) return;
     final consulta = repositorio.listar();
     setState(() {
       _tareas = consulta;
@@ -124,16 +128,12 @@ class _TareaListState extends State<TareaList> with RouteAware {
                 completada: tarea.estado == EstadoTarea.completada,
                 totalSubtareas: tarea.subtareas.length,
                 subtareasCompletadas: tarea.subtareasCompletadas,
-                onTap: widget.repositorio == null
-                    ? null
-                    : () => Navigator.of(context).push<void>(
-                        MaterialPageRoute<void>(
-                          builder: (_) => TareaScreen(
-                            tarea: tarea,
-                            repositorio: widget.repositorio!,
-                          ),
-                        ),
-                      ),
+                onTap: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        TareaScreen(tarea: tarea, repositorio: _repositorio),
+                  ),
+                ),
               ),
             );
           },

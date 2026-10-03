@@ -146,7 +146,10 @@ class _ListaCadranScreen extends StatelessWidget {
       ),
       body: tareas.isEmpty
           ? const Center(child: Text('No hay tareas en este cuadrante.'))
-          : TareaList(tareasOrdenadas: tareas),
+          : Padding(
+              padding: const EdgeInsets.all(16),
+              child: TareaList(/* tareasOrdenadas: tareas */),
+            ),
 
       /* final now = DateTime.now();
                     final tareasOrdenadas = [...tareas]
