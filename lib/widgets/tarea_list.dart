@@ -56,7 +56,10 @@ class _TareaListState extends State<TareaList> with RouteAware {
   void _recargar() {
     final repositorio = widget.repositorio;
     if (!mounted || repositorio == null) return;
-    setState(() => _tareas = repositorio.listar());
+    final consulta = repositorio.listar();
+    setState(() {
+      _tareas = consulta;
+    });
   }
 
   @override
