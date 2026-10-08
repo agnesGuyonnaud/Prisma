@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../data/tareas_repository.dart';
-import '../models/tarea_model.dart';
-import '../utils/fecha_tarea.dart';
-import '../widgets/tarea_mini.dart';
-import 'tarea.dart';
+import '../widgets/tarea_list.dart';
+import 'matriz.dart';
 import 'tarea_formulario.dart';
 
 /// Home que consulta las tareas locales y abre sus formularios y detalles.
@@ -19,40 +17,25 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final TareasRepository _repositorio;
-  late Future<List<Tarea>> _tareas;
 
   @override
   void initState() {
     super.initState();
     _repositorio = widget.repositorio ?? TareasRepository.instancia;
-    _tareas = _repositorio.listar();
-  }
-
-  void _recargar() {
-    if (!mounted) return;
-    final consulta = _repositorio.listar();
-    setState(() {
-      _tareas = consulta;
-    });
   }
 
   Future<void> _crearTarea() async {
-    final guardada = await Navigator.of(context).push<Tarea>(
+    await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => TareaFormulario(repositorio: _repositorio),
       ),
     );
-    if (guardada != null) _recargar();
   }
 
-  Future<void> _abrirTarea(Tarea tarea) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => TareaScreen(tarea: tarea, repositorio: _repositorio),
-      ),
-    );
-    // Refleja las ediciones, los cambios de subtareas y las eliminaciones.
-    _recargar();
+  Future<void> _abrirMatriz() async {
+    if (!mounted) return;
+    await Navigator.of(context)
+        .push<void>(MaterialPageRoute<void>(builder: (_) => MatrizScreen()));
   }
 
   @override
@@ -66,10 +49,10 @@ class _HomeScreenState extends State<HomeScreen> {
         // las tareas, también cuando la ventana supera los 600 dp de ancho.
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: ListView(
-            // Permite desplazar la última tarjeta por encima del FAB.
-            padding: const EdgeInsets.only(bottom: 88),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Cabecera fija: no forma parte de la lista desplazable.
               Row(
                 children: [
                   Expanded(
@@ -98,70 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 32),
               Text('Tareas', style: tema.textTheme.titleMedium),
               const SizedBox(height: 8),
-              // Solo texto de referencia: todavía no abre una lista.
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'Ver todas las tareas →',
-                  style: tema.textTheme.bodySmall?.copyWith(
-                    color: colores.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              FutureBuilder<List<Tarea>>(
-                future: _tareas,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Column(
-                      children: [
-                        const Text('No se pudieron cargar tus tareas.'),
-                        TextButton(
-                          onPressed: _recargar,
-                          child: const Text('Reintentar'),
-                        ),
-                      ],
-                    );
-                  }
-                  final tareas = snapshot.data ?? [];
-                  if (tareas.isEmpty) {
-                    return const Card.filled(
-                      margin: EdgeInsets.zero,
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                          'Aún no tienes tareas. Pulsa “Añadir tarea” para crear la primera.',
-                        ),
-                      ),
-                    );
-                  }
-                  return Column(
-                    children: [
-                      for (final tarea in tareas)
-                        Padding(
-                          key: ValueKey(tarea.id),
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: TareaMini(
-                            titulo: tarea.titulo,
-                            asignatura: tarea.asignatura,
-                            fechaLimite: fechaTarea(
-                              tarea.fechaLimite,
-                              corta: true,
-                            ),
-                            tipo: tarea.tipo,
-                            completada: tarea.estado == EstadoTarea.completada,
-                            totalSubtareas: tarea.subtareas.length,
-                            subtareasCompletadas: tarea.subtareasCompletadas,
-                            onTap: () => _abrirTarea(tarea),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
+              Expanded(child: TareaList(repositorio: _repositorio)),
             ],
           ),
         ),
@@ -174,9 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       // endFloat ya aporta 16 dp desde el borde seguro: no duplicar el margen.
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      // Barra de referencia visual: Inicio permanece seleccionado.
-      // Sin onDestinationSelected, las opciones no cambian la vista ni la selección.
-      // El fondo llega al borde; el contenido conserva 16 dp a cada lado.
+      // (bottomNavigationBar sin cambios)
       bottomNavigationBar: ColoredBox(
         color: colores.surfaceContainer,
         child: Padding(
@@ -184,6 +102,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: NavigationBar(
             backgroundColor: colores.surfaceContainer,
             selectedIndex: 0,
+            onDestinationSelected: (index) {
+              if (index == 1) _abrirMatriz();
+            },
             destinations: const [
               NavigationDestination(
                 icon: Icon(Icons.home_outlined),
