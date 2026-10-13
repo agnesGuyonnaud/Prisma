@@ -5,6 +5,8 @@ import '../widgets/tarea_list.dart';
 import 'matriz.dart';
 import 'tarea_formulario.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+
 /// Home que consulta las tareas locales y abre sus formularios y detalles.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, this.repositorio});
@@ -22,6 +24,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _repositorio = widget.repositorio ?? TareasRepository.instancia;
+  }
+
+  //si no esta logeado, se anota como estudiante, sino se muestra el nombre del usuario
+  String get _nombre {
+    final nombre = FirebaseAuth.instance.currentUser?.displayName?.trim() ?? "";
+    return nombre.isEmpty ? "estudiante" : nombre.split(" ").first;
   }
 
   Future<void> _crearTarea() async {
@@ -57,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Hola, estudiante',
+                      'Hola, $_nombre',
                       style: tema.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

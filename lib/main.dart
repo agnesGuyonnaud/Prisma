@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'data/auth.dart';
 import 'data/tareas_repository.dart';
 import 'screens/home.dart';
+import 'screens/login.dart';
 import 'widgets/tarea_list.dart';
 
-void main() {
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+import 'firebase_options.dart';
+
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized(); //con esto se conecta a la firebase y espera a que este listo para continuar con el inicio de la app 
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform, 
+  );
   runApp(const MainApp());
 }
 
@@ -33,7 +44,21 @@ class MainApp extends StatelessWidget {
           secondary: const Color(0xFFBAE147),
         ),
       ),
-      home: HomeScreen(repositorio: repositorio),
+      //la sesion es distinta si el usuario esta o no logeado
+      //si no lo esta, inicia con la pantalla de login, si lo esta, con la de home
+      home: StreamBuilder<User?>(
+        stream: Auth().usuario,
+        builder: (context, snapshot){
+          if (snapshot.connectionState == ConnectionState.waiting){
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return snapshot.data ==null
+              ?const LoginScreen()
+              :HomeScreen(repositorio: repositorio);
+        },
+      ),
     );
   }
 }
