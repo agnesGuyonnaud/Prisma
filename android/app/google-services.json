@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "384332875358",
+    "project_id": "project-inf320",
+    "storage_bucket": "project-inf320.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:384332875358:android:766ba7ed37083e3efc16cf",
+        "android_client_info": {
+          "package_name": "com.example.prisma"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "384332875358-5k3bghdslcumehqj72ek7sti6df7fik6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.prisma",
+            "certificate_hash": "f45c648dd6e293c8c4966080206ab8555eeb2c5c"
+          }
+        },
+        {
+          "client_id": "384332875358-o3ls3dqd2hvtontjsfsat04s1u69p2c5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDT9y2eNpTylJ9cH9ML7-WmZvTs8-eOQuo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "384332875358-o3ls3dqd2hvtontjsfsat04s1u69p2c5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
