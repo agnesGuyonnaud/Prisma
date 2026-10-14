@@ -242,7 +242,7 @@ class _TareaFormularioState extends State<TareaFormulario> {
                           Icon(Icons.add, color: Colors.blue, size: 18),
                           SizedBox(width: 8),
                           Text(
-                            '+ Nueva asignatura',
+                            'Nueva asignatura',
                             style: TextStyle(
                               color: Colors.blue,
                               fontWeight: FontWeight.bold,
