@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/google_calendar_sync.dart';
 import '../data/tareas_repository.dart';
 import '../models/asignatura_model.dart';
 import '../models/tarea_model.dart';
@@ -42,7 +43,7 @@ class _TareaFormularioState extends State<TareaFormulario> {
   ];
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     final tarea = widget.tarea;
     final hoy = DateTime.now();
@@ -62,30 +63,30 @@ class _TareaFormularioState extends State<TareaFormulario> {
     _cargarAsignaturas();
   }
 
-  Future<void> _cargarAsignaturas() async{
+  Future<void> _cargarAsignaturas() async {
     final lista = await widget.repositorio.listarAsignaturas();
     if (!mounted) return;
-    setState((){
+    setState(() {
       _asignaturas = lista;
     });
   }
 
-  Future<void> _crearAsignaturaRapida() async{
+  Future<void> _crearAsignaturaRapida() async {
     final nueva = await mostrarDialogoAsignatura(
       context: context,
       repositorio: widget.repositorio,
     );
-    if (nueva != null){
+    if (nueva != null) {
       await _cargarAsignaturas();
       if (!mounted) return;
-      setState((){
+      setState(() {
         _asignatura = nueva.nombre;
       });
     }
   }
 
   @override
-  void dispose(){
+  void dispose() {
     _titulo.dispose();
     super.dispose();
   }
@@ -93,7 +94,7 @@ class _TareaFormularioState extends State<TareaFormulario> {
   String? _obligatorio(String? valor) =>
       valor == null || valor.trim().isEmpty ? 'Completa este campo' : null;
 
-  Future<void> _elegirFecha() async{
+  Future<void> _elegirFecha() async {
     final fecha = await showDatePicker(
       context: context,
       initialDate: _fecha,
@@ -124,7 +125,7 @@ class _TareaFormularioState extends State<TareaFormulario> {
     );
   }
 
-  Future<void> _guardar() async{
+  Future<void> _guardar() async {
     if (_guardando || !_formulario.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
     setState(() => _guardando = true);
@@ -144,11 +145,26 @@ class _TareaFormularioState extends State<TareaFormulario> {
           ),
       ],
     );
-    try{
+    try {
       final guardada = await widget.repositorio.guardar(tarea);
+      try {
+        await GoogleCalendarSync(repositorio: widget.repositorio)
+            .sincronizarTareaSiHabilitada(guardada);
+      } on GoogleCalendarSyncException catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'La tarea se guardó, pero no se sincronizó con Calendar: '
+                '${error.message}',
+              ),
+            ),
+          );
+        }
+      }
       if (!mounted) return;
       Navigator.of(context).pop(guardada);
-    } catch (_){
+    } catch (_) {
       if (!mounted) return;
       setState(() => _guardando = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -162,7 +178,7 @@ class _TareaFormularioState extends State<TareaFormulario> {
   }
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final tema = Theme.of(context);
     return PopScope(
       canPop: !_guardando,
@@ -254,12 +270,10 @@ class _TareaFormularioState extends State<TareaFormulario> {
                   ],
                   onChanged: _guardando
                       ? null
-                      : (valor){
-                          if (valor == '__NUEVA_ASIGNATURA__'){
+                      : (valor) {
+                          if (valor == '__NUEVA_ASIGNATURA__') {
                             _crearAsignaturaRapida();
-                          } 
-                          
-                          else {
+                          } else {
                             setState(() => _asignatura = valor);
                           }
                         },
@@ -398,7 +412,7 @@ class _TareaFormularioState extends State<TareaFormulario> {
   }
 }
 
-class _SubtareaEditable{
+class _SubtareaEditable {
   _SubtareaEditable(this.titulo, {this.completada = false});
   String titulo;
   final bool completada;

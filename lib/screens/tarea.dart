@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/google_calendar_sync.dart';
 import '../data/tareas_repository.dart';
 import '../models/tarea_model.dart';
 import '../utils/fecha_tarea.dart';
@@ -68,6 +69,18 @@ class _TareaScreenState extends State<TareaScreen> {
     try {
       final guardada = await widget.repositorio.guardar(actualizada);
       if (mounted) setState(() => _tarea = guardada);
+      try{
+        await GoogleCalendarSync(
+          repositorio: widget.repositorio,
+        ).sincronizarTareaSiHabilitada(guardada);
+      } on GoogleCalendarSyncException catch (error){
+        if (mounted){
+          _mostrarError(
+            'La tarea se guardó, pero no se sincronizó con Calendar: '
+            '${error.message}',
+          );
+        }
+      }
     } catch (_){
       if (mounted){
         _mostrarError('No se pudo guardar el cambio. Inténtalo otra vez.');
@@ -111,8 +124,13 @@ class _TareaScreenState extends State<TareaScreen> {
     if (confirmado != true || !mounted) return;
     setState(() => _guardando = true);
     try {
+      await GoogleCalendarSync(
+        repositorio: widget.repositorio,
+      ).eliminarEventoSiHabilitado(_tarea.id!);
       await widget.repositorio.eliminar(_tarea.id!);
       if (mounted) Navigator.of(context).pop();
+    } on GoogleCalendarSyncException catch (error){
+      if (mounted) _mostrarError(error.message);
     } catch (_){
       if (mounted){
         _mostrarError('No se pudo eliminar la tarea. Inténtalo otra vez.');

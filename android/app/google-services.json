@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "384332875358-ghrjtt575jnad64d6027sgvif1ighde3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.prisma",
+            "certificate_hash": "0ec37782218df02b085309843c7e495885bb4c6f"
+          }
+        },
+        {
           "client_id": "384332875358-o3ls3dqd2hvtontjsfsat04s1u69p2c5.apps.googleusercontent.com",
           "client_type": 3
         }

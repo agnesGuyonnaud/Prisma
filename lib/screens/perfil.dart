@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../data/auth.dart';
+import '../data/google_calendar_sync.dart';
 import '../data/tareas_repository.dart';
 import 'asignaturas.dart';
 
@@ -16,6 +17,127 @@ class PerfilScreen extends StatefulWidget {
 
 class _PerfilScreenState extends State<PerfilScreen> {
   final Auth auth = Auth();
+  bool _calendarSyncEnabled = false;
+  bool _calendarLoading = true;
+  bool _calendarBusy = false;
+  String? _calendarEmail;
+
+  @override
+  void initState(){
+    super.initState();
+    _cargarEstadoCalendar();
+  }
+
+  Future<void> _cargarEstadoCalendar() async{
+    try{
+      final habilitada =
+          await widget.repositorio.sincronizacionCalendarHabilitada();
+      final correo = await widget.repositorio.correoCalendarVinculado();
+      if (!mounted) return;
+      setState((){
+        _calendarSyncEnabled = habilitada;
+        _calendarEmail = correo;
+        _calendarLoading = false;
+      });
+    } catch (_){
+      if (!mounted) return;
+      setState(() => _calendarLoading = false);
+      _mostrarMensaje('No se pudo cargar el estado de Google Calendar.');
+    }
+  }
+
+  Future<void> _cambiarSincronizacionCalendar(bool habilitar) async{
+    if (_calendarBusy) return;
+    if (habilitar){
+      final confirmado = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Sincronizar con Google Calendar'),
+          content: const Text(
+            'Se solicitará permiso para crear y actualizar eventos. '
+            'Las tareas existentes y las nuevas se sincronizarán como eventos '
+            'de una hora en tu calendario principal. Al desactivar la '
+            'sincronización, los eventos ya creados permanecerán en Calendar.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Continuar'),
+            ),
+          ],
+        ),
+      );
+      if (confirmado != true || !mounted) return;
+
+      setState(() => _calendarBusy = true);
+      try{
+        final sincronizado = await GoogleCalendarSync(
+          repositorio: widget.repositorio,
+        ).habilitarYSincronizar();
+        if (!mounted) return;
+        if (sincronizado){
+          await _cargarEstadoCalendar();
+          if (!mounted) return;
+          _mostrarMensaje('Tareas sincronizadas con Google Calendar.');
+        }
+      } catch (error){
+        if (!mounted) return;
+        final mensaje = error is GoogleCalendarSyncException
+            ? error.message
+            : 'No se pudo vincular Google Calendar. Inténtalo otra vez.';
+        _mostrarMensaje(mensaje);
+      } finally{
+        if (mounted) setState(() => _calendarBusy = false);
+      }
+      return;
+    }
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Desactivar sincronización'),
+        content: const Text(
+          'Las tareas dejarán de actualizarse en Calendar. Los eventos que '
+          'ya se crearon permanecerán allí.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Desactivar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmado != true || !mounted) return;
+
+    setState(() => _calendarBusy = true);
+    try{
+      await GoogleCalendarSync(
+        repositorio: widget.repositorio,
+      ).deshabilitar();
+      if (!mounted) return;
+      setState(() => _calendarSyncEnabled = false);
+      _mostrarMensaje('Sincronización desactivada.');
+    } catch (_){
+      if (mounted) _mostrarMensaje('No se pudo desactivar la sincronización.');
+    } finally{
+      if (mounted) setState(() => _calendarBusy = false);
+    }
+  }
+
+  void _mostrarMensaje(String mensaje){
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(mensaje)));
+  }
 
   Future<void> cerrarSesion() async{
     bool? confirmar = await showDialog<bool>(
@@ -23,7 +145,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
       builder: (BuildContext context){
         return AlertDialog(
           title: const Text('Cerrar sesión'),
-          content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
+          content: Text(
+            _calendarSyncEnabled
+                ? 'Al cerrar sesión se desactivará la sincronización. Los '
+                      'eventos que ya están en Google Calendar permanecerán allí. '
+                      '¿Quieres continuar?'
+                : '¿Estás seguro de que quieres cerrar sesión?',
+          ),
           actions: [
             TextButton(
               onPressed: (){
@@ -43,6 +171,20 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
 
     if (confirmar == true){
+      if (_calendarSyncEnabled){
+        try{
+          await GoogleCalendarSync(
+            repositorio: widget.repositorio,
+          ).deshabilitar();
+        } catch (_){
+          if (mounted){
+            _mostrarMensaje(
+              'No se pudo desactivar Calendar; la sesión sigue abierta.',
+            );
+          }
+          return;
+        }
+      }
       await auth.cerrarSesion();
       if (!mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
@@ -137,6 +279,42 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: irAsignaturas,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card.outlined(
+            child: ListTile(
+              leading: Icon(
+                Icons.calendar_month_outlined,
+                color: tema.colorScheme.primary,
+              ),
+              title: const Text(
+                'Sincronizar con Google Calendar',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                _calendarLoading
+                    ? 'Cargando estado...'
+                    : _calendarSyncEnabled
+                    ? 'Activo${_calendarEmail == null ? '' : ' · $_calendarEmail'}'
+                    : 'Crear y actualizar eventos de tus tareas',
+              ),
+              trailing: _calendarBusy || _calendarLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Switch(
+                      value: _calendarSyncEnabled,
+                      onChanged: (habilitar) =>
+                          _cambiarSincronizacionCalendar(habilitar),
+                    ),
+              onTap: _calendarBusy || _calendarLoading
+                  ? null
+                  : () => _cambiarSincronizacionCalendar(
+                      !_calendarSyncEnabled,
+                    ),
             ),
           ),
           const SizedBox(height: 32),

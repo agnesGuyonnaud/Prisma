@@ -4,14 +4,31 @@ import 'package:google_sign_in/google_sign_in.dart';
 class Auth {
   final FirebaseAuth auth = FirebaseAuth.instance;
   final GoogleSignIn google = GoogleSignIn.instance;
-  bool googleListo = false;
+  static Future<void>? _inicializacionGoogle;
+  static bool _googleListo = false;
 
   final String webClientId =
       '384332875358-o3ls3dqd2hvtontjsfsat04s1u69p2c5.apps.googleusercontent.com';
 
   Stream<User?> get usuario => auth.userChanges();
 
-  Future<String?> registrar(String nombre, String correo, String clave) async{
+  Future<void> inicializarGoogle() async {
+    if (_googleListo) return;
+    final inicializacion = _inicializacionGoogle ??= google.initialize(
+      serverClientId: webClientId,
+    );
+    try {
+      await inicializacion;
+      _googleListo = true;
+    } catch (_) {
+      if (identical(_inicializacionGoogle, inicializacion)) {
+        _inicializacionGoogle = null;
+      }
+      rethrow;
+    }
+  }
+
+  Future<String?> registrar(String nombre, String correo, String clave) async {
     try {
       final res = await auth.createUserWithEmailAndPassword(
         email: correo.trim(),
@@ -19,60 +36,57 @@ class Auth {
       );
       await res.user?.updateDisplayName(nombre.trim());
       return null;
-    } on FirebaseAuthException catch (e){
+    } on FirebaseAuthException catch (e) {
       return mensajeError(e.code);
     }
   }
 
-  Future<String?> iniciarSesion(String correo, String clave) async{
+  Future<String?> iniciarSesion(String correo, String clave) async {
     try {
       await auth.signInWithEmailAndPassword(
         email: correo.trim(),
         password: clave,
       );
       return null;
-    } on FirebaseAuthException catch (e){
+    } on FirebaseAuthException catch (e) {
       return mensajeError(e.code);
     }
   }
 
-  Future<String?> iniciarConGoogle() async{
+  Future<String?> iniciarConGoogle() async {
     try {
-      if (!googleListo){
-        await google.initialize(serverClientId: webClientId);
-        googleListo = true;
-      }
+      await inicializarGoogle();
       final cuenta = await google.authenticate();
       final credencial = GoogleAuthProvider.credential(
         idToken: cuenta.authentication.idToken,
       );
       await auth.signInWithCredential(credencial);
       return null;
-    } on GoogleSignInException catch (e){
+    } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) return null;
       return "No se pudo iniciar sesión con Google";
-    } on FirebaseAuthException catch (e){
+    } on FirebaseAuthException catch (e) {
       return mensajeError(e.code);
     }
   }
 
-  Future<String?> recuperarContrasena(String correo) async{
+  Future<String?> recuperarContrasena(String correo) async {
     try {
       await auth.setLanguageCode('es');
       await auth.sendPasswordResetEmail(email: correo.trim());
       return null;
-    } on FirebaseAuthException catch (e){
+    } on FirebaseAuthException catch (e) {
       return mensajeError(e.code);
     }
   }
 
-  Future<void> cerrarSesion() async{
-    if (googleListo) await google.signOut();
+  Future<void> cerrarSesion() async {
+    if (_googleListo) await google.signOut();
     await auth.signOut();
   }
 
-  String mensajeError(String codigo){
-    switch (codigo){
+  String mensajeError(String codigo) {
+    switch (codigo) {
       case "invalid-email":
         return "El correo no es válido";
       case "email-already-in-use":

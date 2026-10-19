@@ -4,7 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import '../models/asignatura_model.dart';
 import '../models/tarea_model.dart';
 
-class TareasRepository{
+class TareasRepository {
   TareasRepository({this.fabrica, this.ruta});
 
   static final TareasRepository instancia = TareasRepository();
@@ -12,19 +12,17 @@ class TareasRepository{
   final String? ruta;
   Future<Database>? _abriendo;
 
-  Future<Database> get database async{
+  Future<Database> get database async {
     final apertura = _abriendo ??= _iniciarBaseDeDatos();
-    try{
+    try {
       return await apertura;
-    }
-    
-    catch (_){
+    } catch (_) {
       if (identical(_abriendo, apertura)) _abriendo = null;
       rethrow;
     }
   }
 
-  Future<Database> _iniciarBaseDeDatos() async{
+  Future<Database> _iniciarBaseDeDatos() async {
     final proveedor = fabrica ?? databaseFactory;
     final ubicacion =
         ruta ??
@@ -33,27 +31,38 @@ class TareasRepository{
     return await proveedor.openDatabase(
       ubicacion,
       options: OpenDatabaseOptions(
-        version: 3,
-        onCreate: (Database db, int version) async{
+        version: 4,
+        onCreate: (Database db, int version) async {
           await _crearTablaTareas(db, 'tareas');
+          await db.execute(
+            'ALTER TABLE tareas ADD COLUMN google_event_id TEXT',
+          );
           await _crearTablaAsignaturas(db);
+          await _crearTablaPreferencias(db);
           await _insertarAsignaturasPorDefecto(db);
         },
-        onUpgrade: (Database db, int versionAnterior, int versionNueva) async{
-          if (versionAnterior < 2){
+        onUpgrade: (Database db, int versionAnterior, int versionNueva) async {
+          if (versionAnterior < 2) {
             await _actualizarTablaTareasV2(db);
           }
 
-          if (versionAnterior < 3){
+          if (versionAnterior < 3) {
             await _crearTablaAsignaturas(db);
             await _insertarAsignaturasPorDefecto(db);
+          }
+
+          if (versionAnterior < 4) {
+            await db.execute(
+              'ALTER TABLE tareas ADD COLUMN google_event_id TEXT',
+            );
+            await _crearTablaPreferencias(db);
           }
         },
       ),
     );
   }
 
-  Future<void> _crearTablaTareas(Database db, String nombre) async{
+  Future<void> _crearTablaTareas(Database db, String nombre) async {
     await db.execute('''
       CREATE TABLE $nombre (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,7 +79,16 @@ class TareasRepository{
     ''');
   }
 
-  Future<void> _actualizarTablaTareasV2(Database db) async{
+  Future<void> _crearTablaPreferencias(Database db) async {
+    await db.execute('''
+      CREATE TABLE preferencias (
+        clave TEXT PRIMARY KEY,
+        valor TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> _actualizarTablaTareasV2(Database db) async {
     await _crearTablaTareas(db, 'tareas_v2');
 
     await db.execute('''
@@ -96,7 +114,7 @@ class TareasRepository{
     await db.execute('ALTER TABLE tareas_v2 RENAME TO tareas');
   }
 
-  Future<void> _crearTablaAsignaturas(Database db) async{
+  Future<void> _crearTablaAsignaturas(Database db) async {
     await db.execute('''
       CREATE TABLE asignaturas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -106,19 +124,19 @@ class TareasRepository{
     ''');
   }
 
-  Future<void> _insertarAsignaturasPorDefecto(Database db) async{
-    await db.insert('asignaturas',{
+  Future<void> _insertarAsignaturasPorDefecto(Database db) async {
+    await db.insert('asignaturas', {
       'nombre': 'Matemáticas',
       'color': 0xFF4CAF50,
     });
-    await db.insert('asignaturas',{
+    await db.insert('asignaturas', {
       'nombre': 'Estructuras de datos',
       'color': 0xFF2196F3,
     });
-    await db.insert('asignaturas',{'nombre': 'Física', 'color': 0xFFFF9800});
+    await db.insert('asignaturas', {'nombre': 'Física', 'color': 0xFFFF9800});
   }
 
-  Future<List<Tarea>> listar() async{
+  Future<List<Tarea>> listar() async {
     Database db = await database;
     List<Map<String, dynamic>> filas = await db.query(
       'tareas',
@@ -126,7 +144,7 @@ class TareasRepository{
     );
 
     List<Tarea> listaTareas = [];
-    for (int i = 0; i < filas.length; i++){
+    for (int i = 0; i < filas.length; i++) {
       Map<String, dynamic> fila = filas[i];
       Tarea tarea = Tarea.fromMap(fila);
       listaTareas.add(tarea);
@@ -134,7 +152,7 @@ class TareasRepository{
     return listaTareas;
   }
 
-  Future<Tarea?> obtener(int id) async{
+  Future<Tarea?> obtener(int id) async {
     Database db = await database;
     List<Map<String, dynamic>> filas = await db.query(
       'tareas',
@@ -142,42 +160,38 @@ class TareasRepository{
       whereArgs: [id],
     );
 
-    if (filas.isEmpty){
+    if (filas.isEmpty) {
       return null;
-    }
-    
-    else{
+    } else {
       return Tarea.fromMap(filas.first);
     }
   }
 
-  Future<Tarea> guardar(Tarea tarea) async{
-    if (tarea.titulo.trim().isEmpty){
+  Future<Tarea> guardar(Tarea tarea) async {
+    if (tarea.titulo.trim().isEmpty) {
       throw ArgumentError('Debes rellenar el título.');
     }
 
-    if (tarea.asignatura.trim().isEmpty){
+    if (tarea.asignatura.trim().isEmpty) {
       throw ArgumentError('Debes rellenar la asignatura.');
     }
-    
-    if (tarea.tipo.trim().isEmpty){
+
+    if (tarea.tipo.trim().isEmpty) {
       throw ArgumentError('Debes rellenar el tipo.');
     }
 
-    for (var subtarea in tarea.subtareas){
-      if (subtarea.titulo.trim().isEmpty){
+    for (var subtarea in tarea.subtareas) {
+      if (subtarea.titulo.trim().isEmpty) {
         throw ArgumentError('Debes rellenar las subtareas.');
       }
     }
 
     Database db = await database;
 
-    if (tarea.id == null){
+    if (tarea.id == null) {
       int idGenerado = await db.insert('tareas', tarea.toMap());
       return tarea.copyWith(id: idGenerado);
-    }
-    
-    else{
+    } else {
       int cambios = await db.update(
         'tareas',
         tarea.toMap(),
@@ -185,19 +199,85 @@ class TareasRepository{
         whereArgs: [tarea.id],
       );
 
-      if (cambios == 0){
+      if (cambios == 0) {
         throw StateError('La tarea que intentas actualizar ya no existe.');
       }
       return tarea;
     }
   }
 
-  Future<void> eliminar(int id) async{
+  Future<void> eliminar(int id) async {
     Database db = await database;
     await db.delete('tareas', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<List<Asignatura>> listarAsignaturas() async{
+  Future<bool> sincronizacionCalendarHabilitada() async {
+    final db = await database;
+    final filas = await db.query(
+      'preferencias',
+      columns: ['valor'],
+      where: 'clave = ?',
+      whereArgs: ['calendar_sync_enabled'],
+      limit: 1,
+    );
+    return filas.isNotEmpty && filas.first['valor'] == 'true';
+  }
+
+  Future<String?> correoCalendarVinculado() async {
+    final db = await database;
+    final filas = await db.query(
+      'preferencias',
+      columns: ['valor'],
+      where: 'clave = ?',
+      whereArgs: ['calendar_account_email'],
+      limit: 1,
+    );
+    return filas.isEmpty ? null : filas.first['valor'] as String;
+  }
+
+  Future<void> guardarEstadoSincronizacionCalendar({
+    required bool habilitada,
+    String? correo,
+  }) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.insert('preferencias', {
+        'clave': 'calendar_sync_enabled',
+        'valor': habilitada.toString(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      if (correo != null) {
+        await txn.insert('preferencias', {
+          'clave': 'calendar_account_email',
+          'valor': correo,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
+  }
+
+  Future<String?> idEventoCalendar(int tareaId) async {
+    final db = await database;
+    final filas = await db.query(
+      'tareas',
+      columns: ['google_event_id'],
+      where: 'id = ?',
+      whereArgs: [tareaId],
+      limit: 1,
+    );
+    if (filas.isEmpty) return null;
+    return filas.first['google_event_id'] as String?;
+  }
+
+  Future<void> guardarIdEventoCalendar(int tareaId, String? eventoId) async {
+    final db = await database;
+    await db.update(
+      'tareas',
+      {'google_event_id': eventoId},
+      where: 'id = ?',
+      whereArgs: [tareaId],
+    );
+  }
+
+  Future<List<Asignatura>> listarAsignaturas() async {
     Database db = await database;
     List<Map<String, dynamic>> filas = await db.query(
       'asignaturas',
@@ -205,25 +285,23 @@ class TareasRepository{
     );
 
     List<Asignatura> listaAsignaturas = [];
-    for (int i = 0; i < filas.length; i++){
+    for (int i = 0; i < filas.length; i++) {
       listaAsignaturas.add(Asignatura.fromMap(filas[i]));
     }
     return listaAsignaturas;
   }
 
-  Future<Asignatura> guardarAsignatura(Asignatura asignatura) async{
-    if (asignatura.nombre.trim().isEmpty){
+  Future<Asignatura> guardarAsignatura(Asignatura asignatura) async {
+    if (asignatura.nombre.trim().isEmpty) {
       throw ArgumentError('Debes rellenar el nombre.');
     }
 
     Database db = await database;
 
-    if (asignatura.id == null){
+    if (asignatura.id == null) {
       int idGenerado = await db.insert('asignaturas', asignatura.toMap());
       return asignatura.copyWith(id: idGenerado);
-    }
-    
-    else{
+    } else {
       await db.update(
         'asignaturas',
         asignatura.toMap(),
@@ -234,12 +312,12 @@ class TareasRepository{
     }
   }
 
-  Future<void> eliminarAsignatura(int id) async{
+  Future<void> eliminarAsignatura(int id) async {
     Database db = await database;
     await db.delete('asignaturas', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<void> cerrar() async{
+  Future<void> cerrar() async {
     final apertura = _abriendo;
     if (apertura == null) return;
     await (await apertura).close();
