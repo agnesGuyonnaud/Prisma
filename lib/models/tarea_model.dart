@@ -23,7 +23,6 @@ class Subtarea {
   );
 }
 
-/// Datos de una tarea, independientes de sus widgets y del acceso a SQLite.
 class Tarea {
   Tarea({
     this.id,
@@ -34,7 +33,7 @@ class Tarea {
     this.importancia = 3,
     this.estado = EstadoTarea.pendiente,
     List<Subtarea> subtareas = const [],
-  }) : subtareas = List.unmodifiable(subtareas) {
+  }) : subtareas = List.unmodifiable(subtareas){
     RangeError.checkValueInInterval(importancia, 1, 5, 'importancia');
   }
 
@@ -43,7 +42,7 @@ class Tarea {
   final String asignatura;
   final DateTime fechaLimite;
   final String tipo;
-  // Entero de 1 (menos importante) a 5 (más importante).
+
   final int importancia;
   final EstadoTarea estado;
   final List<Subtarea> subtareas;
@@ -70,8 +69,6 @@ class Tarea {
     subtareas: subtareas ?? this.subtareas,
   );
 
-  // SQLite guarda la fecha como un entero y la lista de subtareas como JSON.
-  // Así la tarea y sus subtareas se actualizan juntas, en una sola escritura.
   Map<String, Object?> toMap() => {
     if (id != null) 'id': id,
     'titulo': titulo,
@@ -98,11 +95,11 @@ class Tarea {
         .toList(),
   );
 
-  bool isUrgente() {
+  bool isUrgente(){
     return fechaLimite.difference(DateTime.now()).inDays < 3;
   }
 
-  double getImportanceEmergencyScore(DateTime now) {
+  double getImportanceEmergencyScore(DateTime now){
     const iFactor = 2.0;
     const eFactor = 1.0;
     final diasRestantes = fechaLimite.difference(now).inHours / 24.0;

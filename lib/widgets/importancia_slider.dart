@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Selector compartido por el formulario y el detalle. Solo admite enteros.
-/// Quien lo utiliza decide cuándo guardar el cambio en SQLite.
 class ImportanciaSlider extends StatelessWidget {
   const ImportanciaSlider({
     super.key,
@@ -15,7 +13,7 @@ class ImportanciaSlider extends StatelessWidget {
   final ValueChanged<int>? onChangeEnd;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context){
     final tema = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

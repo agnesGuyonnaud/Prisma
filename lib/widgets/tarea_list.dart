@@ -11,8 +11,7 @@ final RouteObserver<ModalRoute<dynamic>> tareasRouteObserver =
     RouteObserver<ModalRoute<dynamic>>();
 
 class TareaList extends StatefulWidget {
-  const TareaList({super.key, this.repositorio, this.cadran})
-  /* : assert(repositorio != null || tareasOrdenadas != null) */;
+  const TareaList({super.key, this.repositorio, this.cadran});
 
   final TareasRepository? repositorio;
   final Cadran? cadran;
@@ -28,19 +27,18 @@ class _TareaListState extends State<TareaList> with RouteAware {
   late final TareasRepository _repositorio;
 
   @override
-  void initState() {
+  void initState(){
     super.initState();
 
     _repositorio = widget.repositorio ?? TareasRepository.instancia;
-    _tareas = _repositorio
-        .listar() /*  ?? Future.value(widget.tareasOrdenadas!) */;
+    _tareas = _repositorio.listar();
   }
 
   @override
-  void didChangeDependencies() {
+  void didChangeDependencies(){
     super.didChangeDependencies();
     final ruta = ModalRoute.of(context);
-    if (ruta != _ruta) {
+    if (ruta != _ruta){
       if (_ruta != null) tareasRouteObserver.unsubscribe(this);
       _ruta = ruta;
       if (ruta != null) tareasRouteObserver.subscribe(this, ruta);
@@ -48,41 +46,41 @@ class _TareaListState extends State<TareaList> with RouteAware {
   }
 
   @override
-  void didPopNext() {
+  void didPopNext(){
     _recargar();
   }
 
   @override
-  void dispose() {
+  void dispose(){
     tareasRouteObserver.unsubscribe(this);
     super.dispose();
   }
 
-  void _recargar() {
+  void _recargar(){
     final repositorio = _repositorio;
     if (!mounted) return;
     final consulta = repositorio.listar();
-    setState(() {
+    setState((){
       _tareas = consulta;
     });
   }
 
   List<Tarea> _filterByCadran(List<Tarea> tareas, Cadran cadran) =>
-      tareas.where((tarea) {
+      tareas.where((tarea){
         final importante = tarea.importancia >= 3;
         return importante == cadran.importante &&
             tarea.isUrgente() == cadran.urgente;
       }).toList();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context){
     return FutureBuilder<List<Tarea>>(
       future: _tareas,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
+      builder: (context, snapshot){
+        if (snapshot.connectionState != ConnectionState.done){
           return const Center(child: CircularProgressIndicator());
         }
-        if (snapshot.hasError) {
+        if (snapshot.hasError){
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -98,7 +96,7 @@ class _TareaListState extends State<TareaList> with RouteAware {
         }
 
         final tareas = snapshot.data ?? [];
-        if (tareas.isEmpty) {
+        if (tareas.isEmpty){
           return const Align(
             alignment: Alignment.topCenter,
             child: Card.filled(
@@ -118,7 +116,7 @@ class _TareaListState extends State<TareaList> with RouteAware {
             ? _filterByCadran(tareas, widget.cadran!)
             : tareas;
 
-        if (tareasToDisplay.isEmpty) {
+        if (tareasToDisplay.isEmpty){
           return Center(child: Text('No hay tareas en este cuadrante.'));
         }
 
@@ -131,7 +129,7 @@ class _TareaListState extends State<TareaList> with RouteAware {
         return ListView.builder(
           padding: const EdgeInsets.only(bottom: 88),
           itemCount: tareasOrdenadas.length,
-          itemBuilder: (context, index) {
+          itemBuilder: (context, index){
             final tarea = tareasOrdenadas[index];
             return Padding(
               key: ValueKey(tarea.id),
@@ -139,6 +137,7 @@ class _TareaListState extends State<TareaList> with RouteAware {
               child: TareaMini(
                 titulo: tarea.titulo,
                 asignatura: tarea.asignatura,
+                repositorio: _repositorio,
                 fechaLimite: fechaTarea(tarea.fechaLimite, corta: true),
                 tipo: tarea.tipo,
                 completada: tarea.estado == EstadoTarea.completada,

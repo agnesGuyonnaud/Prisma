@@ -1,28 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// Tarjeta compacta para insertar en la lista de tareas del home.
-///
-/// Presenta datos sin modificarlos ni guardarlos. La acción opcional [onTap]
-/// permite que el home decida qué hacer al tocarla, por ejemplo abrir el detalle.
-/// El contenedor que la utilice se encarga del ancho y de separar las tarjetas.
-///
-/// Ejemplo:
-/// ```dart
-/// const TareaMini(
-///   titulo: 'Tarea 1',
-///   asignatura: 'Aplicaciones móviles',
-///   fechaLimite: '30 sep · 23:59',
-///   tipo: 'Proyecto',
-///   totalSubtareas: 3,
-/// )
-/// ```
-class TareaMini extends StatelessWidget {
+import '../data/tareas_repository.dart';
+
+class TareaMini extends StatefulWidget {
   const TareaMini({
     super.key,
     required this.titulo,
     required this.asignatura,
     required this.fechaLimite,
     required this.tipo,
+    this.repositorio,
     this.colorAsignatura = const Color(0xFFBAE147),
     this.completada = false,
     this.totalSubtareas = 0,
@@ -34,52 +21,72 @@ class TareaMini extends StatelessWidget {
 
   final String titulo;
   final String asignatura;
-
-  // La fecha llega como texto ya preparado; esta vista no calcula plazos.
   final String fechaLimite;
   final String tipo;
+  final TareasRepository? repositorio;
   final Color colorAsignatura;
   final bool completada;
   final int totalSubtareas;
   final int subtareasCompletadas;
 
-  // Sin callback, conserva su comportamiento puramente visual.
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    // Reutiliza la tipografía y las superficies del tema del home.
+  State<TareaMini> createState() => _TareaMiniState();
+}
+
+class _TareaMiniState extends State<TareaMini> {
+  late Future<Color?> _colorAsignatura;
+
+  TareasRepository get _repositorio =>
+      widget.repositorio ?? TareasRepository.instancia;
+
+  @override
+  void initState(){
+    super.initState();
+    _colorAsignatura = _buscarColorAsignatura();
+  }
+
+  @override
+  void didUpdateWidget(covariant TareaMini oldWidget){
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.asignatura != widget.asignatura ||
+        oldWidget.repositorio != widget.repositorio){
+      _colorAsignatura = _buscarColorAsignatura();
+    }
+  }
+
+  Future<Color?> _buscarColorAsignatura() async{
+    final asignaturas = await _repositorio.listarAsignaturas();
+    for (final asignatura in asignaturas){
+      if (asignatura.nombre == widget.asignatura) return asignatura.color;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context){
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
-    // El color de cada asignatura genera un par de fondo/texto para su etiqueta.
-    final coloresAsignatura = ColorScheme.fromSeed(
-      seedColor: colorAsignatura,
-      brightness: tema.brightness,
-    );
 
-    // Misma variante tonal que el detalle: fondo del tema, sin borde exterior.
     return Card.filled(
-      // El home ya aporta los 16 dp laterales; no se añade otro margen aquí.
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
-      // InkWell añade respuesta visual al toque y permite activar con teclado.
-      // Al estar dentro de Card, su efecto queda contenido por los bordes.
+
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Título y asignatura comparten fila, como en el wireframe.
-              // Los textos largos se acortan para conservar el formato compacto.
               Row(
                 children: [
                   Expanded(
                     flex: 2,
                     child: Text(
-                      titulo,
+                      widget.titulo,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: tema.textTheme.titleSmall?.copyWith(
@@ -90,19 +97,36 @@ class TareaMini extends StatelessWidget {
                   const SizedBox(width: 8),
                   Flexible(
                     flex: 3,
-                    child: Chip(
-                      backgroundColor: coloresAsignatura.primaryContainer,
-                      side: BorderSide.none,
-                      labelStyle: tema.textTheme.labelLarge?.copyWith(
-                        color: coloresAsignatura.onPrimaryContainer,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.1,
-                      ),
-                      label: Text(
-                        asignatura,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    child: FutureBuilder<Color?>(
+                      future: _colorAsignatura,
+                      builder: (context, snapshot){
+                        final color =
+                            snapshot.data ?? widget.colorAsignatura;
+                        final colorTexto =
+                            ThemeData.estimateBrightnessForColor(color) ==
+                                Brightness.dark
+                            ? Colors.white
+                            : Colors.black;
+                        return Tooltip(
+                          message: snapshot.hasError
+                              ? 'No se pudo cargar el color de la asignatura'
+                              : widget.asignatura,
+                          child: Chip(
+                            backgroundColor: color,
+                            side: BorderSide.none,
+                            labelStyle: tema.textTheme.labelLarge?.copyWith(
+                              color: colorTexto,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.1,
+                            ),
+                            label: Text(
+                              widget.asignatura,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -111,37 +135,36 @@ class TareaMini extends StatelessWidget {
               _DatoMini(
                 icono: Icons.calendar_today_outlined,
                 etiqueta: 'Fecha límite',
-                valor: fechaLimite,
+                valor: widget.fechaLimite,
               ),
               const SizedBox(height: 8),
               _DatoMini(
                 icono: Icons.description_outlined,
                 etiqueta: 'Tipo',
-                valor: tipo,
+                valor: widget.tipo,
               ),
               const Divider(height: 16),
-              // La casilla es solo un indicador visual, no un control interactivo.
-              // Semantics comunica su estado sin anunciar una acción inexistente.
+
               Row(
                 children: [
                   Semantics(
                     label: 'Tarea completada',
-                    checked: completada,
+                    checked: widget.completada,
                     child: Icon(
-                      completada
+                      widget.completada
                           ? Icons.check_box_outlined
                           : Icons.check_box_outline_blank,
                       size: 20,
-                      color: completada
+                      color: widget.completada
                           ? colores.primary
                           : colores.onSurfaceVariant,
                     ),
                   ),
-                  if (totalSubtareas > 0) ...[
+                  if (widget.totalSubtareas > 0) ...[
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '$subtareasCompletadas de $totalSubtareas subtareas',
+                        '${widget.subtareasCompletadas} de ${widget.totalSubtareas} subtareas',
                         style: tema.textTheme.bodySmall?.copyWith(
                           color: colores.onSurfaceVariant,
                         ),
@@ -158,7 +181,6 @@ class TareaMini extends StatelessWidget {
   }
 }
 
-// Fila de información secundaria: icono a la izquierda y texto a la derecha.
 class _DatoMini extends StatelessWidget {
   const _DatoMini({
     required this.icono,
@@ -171,7 +193,7 @@ class _DatoMini extends StatelessWidget {
   final String valor;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context){
     final tema = Theme.of(context);
 
     return Semantics(

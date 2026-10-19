@@ -5,9 +5,9 @@ import '../data/tareas_repository.dart';
 import '../models/tarea_model.dart';
 import '../widgets/matriz_tareas.dart';
 import '../widgets/tarea_list.dart';
+import 'perfil.dart';
 import 'tarea_formulario.dart';
 
-/// Matriz que consulta las tareas locales y abre sus formularios y detalles.
 class MatrizScreen extends StatefulWidget {
   const MatrizScreen({super.key, this.repositorio});
 
@@ -23,17 +23,17 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   ModalRoute<dynamic>? _ruta;
 
   @override
-  void initState() {
+  void initState(){
     super.initState();
     _repositorio = widget.repositorio ?? TareasRepository.instancia;
     _tareas = _repositorio.listar();
   }
 
   @override
-  void didChangeDependencies() {
+  void didChangeDependencies(){
     super.didChangeDependencies();
     final ruta = ModalRoute.of(context);
-    if (ruta != _ruta) {
+    if (ruta != _ruta){
       if (_ruta != null) tareasRouteObserver.unsubscribe(this);
       _ruta = ruta;
       if (ruta != null) tareasRouteObserver.subscribe(this, ruta);
@@ -44,26 +44,26 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   void didPopNext() => _recargar();
 
   @override
-  void dispose() {
+  void dispose(){
     tareasRouteObserver.unsubscribe(this);
     super.dispose();
   }
 
-  void _recargar() {
+  void _recargar(){
     if (!mounted) return;
     final consulta = _repositorio.listar();
-    setState(() {
+    setState((){
       _tareas = consulta;
     });
   }
 
-  Future<void> _abrirInicio() async {
+  Future<void> _abrirInicio() async{
     if (!mounted) return;
     await Navigator.of(context)
         .push<void>(MaterialPageRoute<void>(builder: (_) => HomeScreen()));
   }
 
-  Future<void> _crearTarea() async {
+  Future<void> _crearTarea() async{
     await Navigator.of(context).push<Tarea>(
       MaterialPageRoute(
         builder: (_) => TareaFormulario(repositorio: _repositorio),
@@ -71,56 +71,64 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
     );
   }
 
+  void _abrirPerfil(){
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PerfilScreen(repositorio: _repositorio),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context){
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
 
     return Scaffold(
       body: SafeArea(
-        // Un único margen exterior de 16 dp alinea el saludo, el perfil y
-        // las tareas, también cuando la ventana supera los 600 dp de ancho.
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Cabecera fija: no forma parte de la lista desplazable.
               Row(
                 children: [
                   Expanded(
                     child: Text(
-                      'Matriz de Eisenhower',
+                      'Matriz de Eisenhower - matriz screen',
                       style: tema.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   const SizedBox(width: 16),
-                  // Indicador de perfil decorativo, sin acción.
-                  Semantics(
-                    label: 'Perfil',
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundColor: colores.secondaryContainer,
-                      child: Icon(
-                        Icons.person_outline,
-                        color: colores.onSecondaryContainer,
+
+                  GestureDetector(
+                    onTap: _abrirPerfil,
+                    child: Semantics(
+                      label: 'Perfil',
+                      child: CircleAvatar(
+                        radius: 20,
+                        backgroundColor: colores.secondaryContainer,
+                        child: Icon(
+                          Icons.person_outline,
+                          color: colores.onSecondaryContainer,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 32),
-              // El ListView solo contiene la lista de tareas.
+
               Expanded(
                 child: FutureBuilder<List<Tarea>>(
                   future: _tareas,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
+                  builder: (context, snapshot){
+                    if (snapshot.connectionState != ConnectionState.done){
                       return const Center(child: CircularProgressIndicator());
                     }
-                    if (snapshot.hasError) {
+                    if (snapshot.hasError){
                       return Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -143,15 +151,15 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
           ),
         ),
       ),
-      // El formulario guarda en SQLite antes de devolver la nueva tarea.
+
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _crearTarea,
         icon: const Icon(Icons.add),
         label: const Text('Añadir tarea'),
       ),
-      // endFloat ya aporta 16 dp desde el borde seguro: no duplicar el margen.
+
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      // (bottomNavigationBar sin cambios)
+
       bottomNavigationBar: ColoredBox(
         color: colores.surfaceContainer,
         child: Padding(
@@ -159,7 +167,7 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
           child: NavigationBar(
             backgroundColor: colores.surfaceContainer,
             selectedIndex: 1,
-            onDestinationSelected: (index) {
+            onDestinationSelected: (index){
               if (index == 0) _abrirInicio();
             },
             destinations: const [

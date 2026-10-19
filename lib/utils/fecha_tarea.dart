@@ -1,5 +1,4 @@
-/// Fecha local en español, compartida por el formulario, el home y el detalle.
-String fechaTarea(DateTime fecha, {bool corta = false}) {
+String fechaTarea(DateTime fecha, {bool corta = false}){
   const meses = [
     'enero',
     'febrero',

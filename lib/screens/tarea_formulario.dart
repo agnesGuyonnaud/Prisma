@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../data/google_calendar_sync.dart';
 import '../data/tareas_repository.dart';
+import '../models/asignatura_model.dart';
 import '../models/tarea_model.dart';
 import '../utils/fecha_tarea.dart';
 import '../widgets/importancia_slider.dart';
+import 'asignaturas.dart';
 
-/// El mismo formulario sirve para crear una tarea y editar una ya guardada.
 class TareaFormulario extends StatefulWidget {
   const TareaFormulario({super.key, required this.repositorio, this.tarea});
 
@@ -27,8 +29,7 @@ class _TareaFormularioState extends State<TareaFormulario> {
   late final List<_SubtareaEditable> _subtareas;
   bool _guardando = false;
 
-  // Opciones provisionales hasta conectar el módulo de asignaturas.
-  static const _asignaturas = ['Matemáticas', 'Estructuras de datos', 'Física'];
+  List<Asignatura> _asignaturas = [];
 
   static const _tipos = [
     'Tarea',
@@ -58,6 +59,30 @@ class _TareaFormularioState extends State<TareaFormulario> {
       for (final subtarea in tarea?.subtareas ?? <Subtarea>[])
         _SubtareaEditable(subtarea.titulo, completada: subtarea.completada),
     ];
+
+    _cargarAsignaturas();
+  }
+
+  Future<void> _cargarAsignaturas() async {
+    final lista = await widget.repositorio.listarAsignaturas();
+    if (!mounted) return;
+    setState(() {
+      _asignaturas = lista;
+    });
+  }
+
+  Future<void> _crearAsignaturaRapida() async {
+    final nueva = await mostrarDialogoAsignatura(
+      context: context,
+      repositorio: widget.repositorio,
+    );
+    if (nueva != null) {
+      await _cargarAsignaturas();
+      if (!mounted) return;
+      setState(() {
+        _asignatura = nueva.nombre;
+      });
+    }
   }
 
   @override
@@ -87,7 +112,7 @@ class _TareaFormularioState extends State<TareaFormulario> {
       cancelText: 'Cancelar',
       confirmText: 'Aceptar',
     );
-    // Cancelar cualquiera de los selectores conserva la fecha anterior.
+
     if (hora == null || !mounted) return;
     setState(
       () => _fecha = DateTime(
@@ -121,8 +146,22 @@ class _TareaFormularioState extends State<TareaFormulario> {
       ],
     );
     try {
-      // Se vuelve a la pantalla anterior solo después de confirmar la escritura.
       final guardada = await widget.repositorio.guardar(tarea);
+      try {
+        await GoogleCalendarSync(repositorio: widget.repositorio)
+            .sincronizarTareaSiHabilitada(guardada);
+      } on GoogleCalendarSyncException catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'La tarea se guardó, pero no se sincronizó con Calendar: '
+                '${error.message}',
+              ),
+            ),
+          );
+        }
+      }
       if (!mounted) return;
       Navigator.of(context).pop(guardada);
     } catch (_) {
@@ -177,29 +216,67 @@ class _TareaFormularioState extends State<TareaFormulario> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  key: const ValueKey('asignatura'),
+                  key: ValueKey('asignatura_$_asignatura'),
                   initialValue: _asignatura,
                   isExpanded: true,
                   hint: const Text('Selecciona una asignatura'),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Asignatura',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      tooltip: 'Nueva asignatura',
+                      onPressed: _guardando ? null : _crearAsignaturaRapida,
+                    ),
                   ),
                   items: [
-                    // Al editar, conserva también cualquier asignatura antigua
-                    // que no forme parte de estas tres opciones de ejemplo.
-                    for (final asignatura in {
-                      ..._asignaturas,
-                      if (widget.tarea != null) widget.tarea!.asignatura,
-                    })
-                      DropdownMenuItem(
-                        value: asignatura,
-                        child: Text(asignatura),
+                    for (final a in _asignaturas)
+                      DropdownMenuItem<String>(
+                        value: a.nombre,
+                        child: Row(
+                          children: [
+                            CircleAvatar(backgroundColor: a.color, radius: 6),
+                            const SizedBox(width: 8),
+                            Text(a.nombre),
+                          ],
+                        ),
                       ),
+
+                    if (widget.tarea != null &&
+                        !_asignaturas.any(
+                          (a) => a.nombre == widget.tarea!.asignatura,
+                        ))
+                      DropdownMenuItem<String>(
+                        value: widget.tarea!.asignatura,
+                        child: Text(widget.tarea!.asignatura),
+                      ),
+
+                    const DropdownMenuItem<String>(
+                      value: '__NUEVA_ASIGNATURA__',
+                      child: Row(
+                        children: [
+                          Icon(Icons.add, color: Colors.blue, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'Nueva asignatura',
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                   onChanged: _guardando
                       ? null
-                      : (valor) => setState(() => _asignatura = valor),
+                      : (valor) {
+                          if (valor == '__NUEVA_ASIGNATURA__') {
+                            _crearAsignaturaRapida();
+                          } else {
+                            setState(() => _asignatura = valor);
+                          }
+                        },
                   validator: _obligatorio,
                 ),
                 const SizedBox(height: 16),
@@ -335,7 +412,6 @@ class _TareaFormularioState extends State<TareaFormulario> {
   }
 }
 
-// Borrador con identidad estable: quitar una fila no intercambia sus textos.
 class _SubtareaEditable {
   _SubtareaEditable(this.titulo, {this.completada = false});
   String titulo;

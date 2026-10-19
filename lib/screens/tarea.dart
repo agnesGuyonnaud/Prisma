@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../data/google_calendar_sync.dart';
 import '../data/tareas_repository.dart';
 import '../models/tarea_model.dart';
 import '../utils/fecha_tarea.dart';
 import '../widgets/importancia_slider.dart';
 import 'tarea_formulario.dart';
 
-/// Detalle de la tarea seleccionada, con cambios persistidos en SQLite.
-// StatefulWidget permite actualizar la vista al marcar o desmarcar subtareas.
 class TareaScreen extends StatefulWidget {
   const TareaScreen({
     super.key,
@@ -24,39 +23,66 @@ class TareaScreen extends StatefulWidget {
 
 class _TareaScreenState extends State<TareaScreen> {
   late Tarea _tarea;
+  late Future<Color?> _colorAsignatura;
   bool _guardando = false;
   int? _importanciaTemporal;
 
   @override
-  void initState() {
+  void initState(){
     super.initState();
     _tarea = widget.tarea;
+    _colorAsignatura = _buscarColorAsignatura(_tarea.asignatura);
   }
 
-  void _mostrarError(String mensaje) {
+  Future<Color?> _buscarColorAsignatura(String nombre) async{
+    final asignaturas = await widget.repositorio.listarAsignaturas();
+    for (final asignatura in asignaturas){
+      if (asignatura.nombre == nombre) return asignatura.color;
+    }
+    return null;
+  }
+
+  void _mostrarError(String mensaje){
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
-  Future<void> _editar() async {
+  Future<void> _editar() async{
     final editada = await Navigator.of(context).push<Tarea>(
       MaterialPageRoute(
         builder: (_) =>
             TareaFormulario(repositorio: widget.repositorio, tarea: _tarea),
       ),
     );
-    if (mounted && editada != null) setState(() => _tarea = editada);
+    if (mounted && editada != null){
+      setState((){
+        _tarea = editada;
+        _colorAsignatura = _buscarColorAsignatura(_tarea.asignatura);
+      });
+    }
   }
 
-  Future<void> _guardarCambio(Tarea actualizada) async {
+  Future<void> _guardarCambio(Tarea actualizada) async{
     if (_guardando) return;
     setState(() => _guardando = true);
     try {
       final guardada = await widget.repositorio.guardar(actualizada);
       if (mounted) setState(() => _tarea = guardada);
-    } catch (_) {
-      if (mounted) {
+      try{
+        await GoogleCalendarSync(
+          repositorio: widget.repositorio,
+        ).sincronizarTareaSiHabilitada(guardada);
+      } on GoogleCalendarSyncException catch (error){
+        if (mounted){
+          _mostrarError(
+            'La tarea se guardó, pero no se sincronizó con Calendar: '
+            '${error.message}',
+          );
+        }
+      }
+    } catch (_){
+      if (mounted){
         _mostrarError('No se pudo guardar el cambio. Inténtalo otra vez.');
       }
     } finally {
@@ -64,16 +90,15 @@ class _TareaScreenState extends State<TareaScreen> {
     }
   }
 
-  Future<void> _cambiarImportancia(int valor) async {
-    // El deslizador responde al movimiento, pero escribe solo al soltarlo.
-    if (valor != _tarea.importancia) {
+  Future<void> _cambiarImportancia(int valor) async{
+    if (valor != _tarea.importancia){
       await _guardarCambio(_tarea.copyWith(importancia: valor));
     }
-    // Si falló la escritura, vuelve a mostrar el último valor guardado.
+
     if (mounted) setState(() => _importanciaTemporal = null);
   }
 
-  Future<void> _eliminar() async {
+  Future<void> _eliminar() async{
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -99,10 +124,15 @@ class _TareaScreenState extends State<TareaScreen> {
     if (confirmado != true || !mounted) return;
     setState(() => _guardando = true);
     try {
+      await GoogleCalendarSync(
+        repositorio: widget.repositorio,
+      ).eliminarEventoSiHabilitado(_tarea.id!);
       await widget.repositorio.eliminar(_tarea.id!);
       if (mounted) Navigator.of(context).pop();
-    } catch (_) {
-      if (mounted) {
+    } on GoogleCalendarSyncException catch (error){
+      if (mounted) _mostrarError(error.message);
+    } catch (_){
+      if (mounted){
         _mostrarError('No se pudo eliminar la tarea. Inténtalo otra vez.');
       }
     } finally {
@@ -111,10 +141,7 @@ class _TareaScreenState extends State<TareaScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    // El tema pertenece solo a esta vista: no requiere cambios en main.dart.
-    // Conserva el modo claro/oscuro de la aplicación y genera pares de colores
-    // de fondo y texto a partir del morado de referencia.
+  Widget build(BuildContext context){
     final colores = ColorScheme.fromSeed(
       seedColor: const Color(0xFF6674E8),
       primary: const Color(0xFF6674E8),
@@ -123,12 +150,12 @@ class _TareaScreenState extends State<TareaScreen> {
     );
     return Theme(
       data: ThemeData(useMaterial3: true, colorScheme: colores),
-      // Builder proporciona un contexto que ya incluye el tema local.
+
       child: Builder(builder: _construirDetalle),
     );
   }
 
-  Widget _construirDetalle(BuildContext context) {
+  Widget _construirDetalle(BuildContext context){
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
     final textos = tema.textTheme;
@@ -142,8 +169,7 @@ class _TareaScreenState extends State<TareaScreen> {
           title: const Text('Detalle de tarea'),
           centerTitle: false,
           titleSpacing: 16,
-          // La flecha vuelve a la ruta anterior. Si se usa como pantalla inicial
-          // de prueba, queda deshabilitada porque todavía no hay dónde volver.
+
           leading: IconButton(
             tooltip: 'Volver',
             icon: const BackButtonIcon(),
@@ -152,21 +178,18 @@ class _TareaScreenState extends State<TareaScreen> {
                 : null,
           ),
           actions: [
-            // Editar queda accesible en la barra y libera espacio vertical.
-            // El tooltip también proporciona una etiqueta de accesibilidad.
             IconButton(
               tooltip: 'Editar',
               onPressed: _guardando ? null : _editar,
               icon: const Icon(Icons.edit_outlined),
             ),
-            // Las acciones secundarias quedan en un menú siempre accesible,
-            // sin reservar una franja inferior exclusivamente para Eliminar.
+
             PopupMenuButton<String>(
               enabled: !_guardando,
               tooltip: 'Más opciones',
               icon: const Icon(Icons.more_vert),
-              onSelected: (accion) {
-                if (accion == 'eliminar') {
+              onSelected: (accion){
+                if (accion == 'eliminar'){
                   _eliminar();
                 }
               },
@@ -187,15 +210,12 @@ class _TareaScreenState extends State<TareaScreen> {
           ],
         ),
         body: SafeArea(
-          // El contenido se desplaza y el menú permanece en la barra superior.
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Center(
-              // Evita estirar la tarjeta demasiado en tabletas o escritorio.
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
-                // Card.filled aporta la superficie tonal y la forma de Material 3.
-                // Sustituye la tarjeta personalizada con una franja lateral.
+
                 child: Card.filled(
                   margin: EdgeInsets.zero,
                   clipBehavior: Clip.antiAlias,
@@ -204,7 +224,6 @@ class _TareaScreenState extends State<TareaScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Conservamos título y asignatura en una sola fila.
                         Row(
                           children: [
                             Expanded(
@@ -216,31 +235,45 @@ class _TareaScreenState extends State<TareaScreen> {
                             const SizedBox(width: 8),
                             Flexible(
                               flex: 2,
-                              // Chip es una etiqueta informativa, sin acción de
-                              // filtro o selección asociada a la asignatura.
-                              child: Chip(
-                                // Usamos el par primaryContainer/onPrimaryContainer
-                                // para una etiqueta morada con contraste tonal.
-                                backgroundColor: const Color(0xFFBAE147),
-                                side: BorderSide.none,
-                                // Un texto más grande y seminegrita mejora la
-                                // lectura de la asignatura en pantallas móviles.
-                                labelStyle: textos.labelLarge?.copyWith(
-                                  color: colores.onPrimaryContainer,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.1,
-                                ),
-                                label: Text(
-                                  _tarea.asignatura,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+
+                              child: FutureBuilder<Color?>(
+                                future: _colorAsignatura,
+                                builder: (context, snapshot){
+                                  final color =
+                                      snapshot.data ?? const Color(0xFFBAE147);
+                                  final colorTexto =
+                                      ThemeData.estimateBrightnessForColor(
+                                            color,
+                                          ) ==
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black;
+                                  return Tooltip(
+                                    message: snapshot.hasError
+                                        ? 'No se pudo cargar el color de la asignatura'
+                                        : _tarea.asignatura,
+                                    child: Chip(
+                                      backgroundColor: color,
+                                      side: BorderSide.none,
+                                      labelStyle: textos.labelLarge?.copyWith(
+                                        color: colorTexto,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.1,
+                                      ),
+                                      label: Text(
+                                        _tarea.asignatura,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        // Un widget reutilizable mantiene alineados los datos.
+
                         _DatoTarea(
                           icono: Icons.calendar_today_outlined,
                           etiqueta: 'Fecha límite',
@@ -265,7 +298,7 @@ class _TareaScreenState extends State<TareaScreen> {
                                 : _cambiarImportancia,
                           ),
                         ),
-                        // El estado puede cambiarse sin abrir todo el formulario.
+
                         PopupMenuButton<EstadoTarea>(
                           enabled: !_guardando,
                           tooltip: 'Cambiar estado',
@@ -297,8 +330,7 @@ class _TareaScreenState extends State<TareaScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        // Filas contiguas con casilla a la izquierda. Conservamos
-                        // las áreas táctiles estándar; no encogemos las casillas.
+
                         for (var i = 0; i < _tarea.subtareas.length; i++)
                           CheckboxListTile(
                             contentPadding: EdgeInsets.zero,
@@ -315,7 +347,7 @@ class _TareaScreenState extends State<TareaScreen> {
                             ),
                             onChanged: _guardando
                                 ? null
-                                : (valor) {
+                                : (valor){
                                     final subtareas = [..._tarea.subtareas];
                                     subtareas[i] = Subtarea(
                                       titulo: subtareas[i].titulo,
@@ -339,8 +371,6 @@ class _TareaScreenState extends State<TareaScreen> {
   }
 }
 
-// Widget privado y reutilizable para mostrar icono, etiqueta y valor.
-// Es StatelessWidget porque no necesita guardar ni modificar estado propio.
 class _DatoTarea extends StatelessWidget {
   const _DatoTarea({
     required this.icono,
@@ -353,18 +383,17 @@ class _DatoTarea extends StatelessWidget {
   final String valor;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context){
     final tema = Theme.of(context);
 
     return Padding(
-      // Espaciado basado en múltiplos de 8 para mantener un ritmo uniforme.
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icono, size: 24, color: tema.colorScheme.onSurfaceVariant),
           const SizedBox(width: 16),
-          // Permite que los valores largos ocupen varias líneas sin desbordarse.
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
