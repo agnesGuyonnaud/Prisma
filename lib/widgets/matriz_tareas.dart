@@ -9,37 +9,6 @@ class MatrizTareas extends StatelessWidget {
 
   final List<Tarea> tareas;
 
-  static const _cadranes = [
-    Cadran(
-      titulo: 'Importante y urgente',
-      descripcion: 'Hacer ahora',
-      importante: true,
-      urgente: true,
-      color: Color(0xFFF3C5B8),
-    ),
-    Cadran(
-      titulo: 'Importante, no urgente',
-      descripcion: 'Planificar',
-      importante: true,
-      urgente: false,
-      color: Color(0xFFD7E8BD),
-    ),
-    Cadran(
-      titulo: 'No importante, urgente',
-      descripcion: 'Delegar',
-      importante: false,
-      urgente: true,
-      color: Color(0xFFF4E0A5),
-    ),
-    Cadran(
-      titulo: 'No importante, no urgente',
-      descripcion: 'Reducir o eliminar',
-      importante: false,
-      urgente: false,
-      color: Color(0xFFD6E6EA),
-    ),
-  ];
-
   List<Tarea> _tareasDelCadran(Cadran cadran) => tareas.where((tarea){
     final importante = tarea.importancia >= 3;
     return importante == cadran.importante &&
@@ -48,6 +17,38 @@ class MatrizTareas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context){
+    final colores = Theme.of(context).colorScheme;
+    final cadranes = [
+      Cadran(
+        titulo: 'Importante y urgente',
+        descripcion: 'Hacer ahora',
+        importante: true,
+        urgente: true,
+        color: const Color(0xFFBAE147),
+      ),
+      Cadran(
+        titulo: 'Importante, no urgente',
+        descripcion: 'Planificar',
+        importante: true,
+        urgente: false,
+        color: Color.lerp(colores.primaryContainer, colores.primary, 0.4)!,
+      ),
+      Cadran(
+        titulo: 'No importante, urgente',
+        descripcion: 'Delegar',
+        importante: false,
+        urgente: true,
+        color: colores.tertiaryContainer,
+      ),
+      Cadran(
+        titulo: 'No importante, no urgente',
+        descripcion: 'Reducir o eliminar',
+        importante: false,
+        urgente: false,
+        color: colores.primaryContainer,
+      ),
+    ];
+
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -56,9 +57,9 @@ class MatrizTareas extends StatelessWidget {
         mainAxisSpacing: 12,
         childAspectRatio: 0.95,
       ),
-      itemCount: _cadranes.length,
+      itemCount: cadranes.length,
       itemBuilder: (context, index){
-        final cadran = _cadranes[index];
+        final cadran = cadranes[index];
         final tareasCadran = _tareasDelCadran(cadran);
         return Card.filled(
           margin: EdgeInsets.zero,

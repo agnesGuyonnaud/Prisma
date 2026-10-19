@@ -22,6 +22,7 @@ class TareaScreen extends StatefulWidget {
 
 class _TareaScreenState extends State<TareaScreen> {
   late Tarea _tarea;
+  late Future<Color?> _colorAsignatura;
   bool _guardando = false;
   int? _importanciaTemporal;
 
@@ -29,6 +30,15 @@ class _TareaScreenState extends State<TareaScreen> {
   void initState(){
     super.initState();
     _tarea = widget.tarea;
+    _colorAsignatura = _buscarColorAsignatura(_tarea.asignatura);
+  }
+
+  Future<Color?> _buscarColorAsignatura(String nombre) async{
+    final asignaturas = await widget.repositorio.listarAsignaturas();
+    for (final asignatura in asignaturas){
+      if (asignatura.nombre == nombre) return asignatura.color;
+    }
+    return null;
   }
 
   void _mostrarError(String mensaje){
@@ -44,7 +54,12 @@ class _TareaScreenState extends State<TareaScreen> {
             TareaFormulario(repositorio: widget.repositorio, tarea: _tarea),
       ),
     );
-    if (mounted && editada != null) setState(() => _tarea = editada);
+    if (mounted && editada != null){
+      setState((){
+        _tarea = editada;
+        _colorAsignatura = _buscarColorAsignatura(_tarea.asignatura);
+      });
+    }
   }
 
   Future<void> _guardarCambio(Tarea actualizada) async{
@@ -203,20 +218,38 @@ class _TareaScreenState extends State<TareaScreen> {
                             Flexible(
                               flex: 2,
 
-                              child: Chip(
-                                backgroundColor: const Color(0xFFBAE147),
-                                side: BorderSide.none,
-
-                                labelStyle: textos.labelLarge?.copyWith(
-                                  color: colores.onPrimaryContainer,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.1,
-                                ),
-                                label: Text(
-                                  _tarea.asignatura,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                              child: FutureBuilder<Color?>(
+                                future: _colorAsignatura,
+                                builder: (context, snapshot){
+                                  final color =
+                                      snapshot.data ?? const Color(0xFFBAE147);
+                                  final colorTexto =
+                                      ThemeData.estimateBrightnessForColor(
+                                            color,
+                                          ) ==
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black;
+                                  return Tooltip(
+                                    message: snapshot.hasError
+                                        ? 'No se pudo cargar el color de la asignatura'
+                                        : _tarea.asignatura,
+                                    child: Chip(
+                                      backgroundColor: color,
+                                      side: BorderSide.none,
+                                      labelStyle: textos.labelLarge?.copyWith(
+                                        color: colorTexto,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.1,
+                                      ),
+                                      label: Text(
+                                        _tarea.asignatura,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ],

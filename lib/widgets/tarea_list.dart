@@ -137,6 +137,7 @@ class _TareaListState extends State<TareaList> with RouteAware {
               child: TareaMini(
                 titulo: tarea.titulo,
                 asignatura: tarea.asignatura,
+                repositorio: _repositorio,
                 fechaLimite: fechaTarea(tarea.fechaLimite, corta: true),
                 tipo: tarea.tipo,
                 completada: tarea.estado == EstadoTarea.completada,

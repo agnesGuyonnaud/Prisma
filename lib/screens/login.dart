@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   Text(
-                    "Prisma",
+                    "PomoGrid",
                     textAlign: TextAlign.center,
                     style: tema.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
