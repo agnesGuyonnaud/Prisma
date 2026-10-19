@@ -11,29 +11,29 @@ class MatrizTareas extends StatelessWidget {
 
   static const _cadranes = [
     Cadran(
-      titulo: 'Importante y urgente',
-      descripcion: 'Hacer ahora',
+      titulo: 'Hazlo',
+      descripcion: 'Importante y urgente',
       importante: true,
       urgente: true,
       color: Color(0xFFF3C5B8),
     ),
     Cadran(
-      titulo: 'Importante, no urgente',
-      descripcion: 'Planificar',
+      titulo: 'Planificalo',
+      descripcion: 'Importante, no urgente',
       importante: true,
       urgente: false,
       color: Color(0xFFD7E8BD),
     ),
     Cadran(
-      titulo: 'No importante, urgente',
-      descripcion: 'Delegar',
+      titulo: 'Delegalo',
+      descripcion: 'No importante, urgente',
       importante: false,
       urgente: true,
       color: Color(0xFFF4E0A5),
     ),
     Cadran(
-      titulo: 'No importante, no urgente',
-      descripcion: 'Reducir o eliminar',
+      titulo: 'Postergalo',
+      descripcion: 'No importante, no urgente',
       importante: false,
       urgente: false,
       color: Color(0xFFD6E6EA),
@@ -75,13 +75,11 @@ class MatrizTareas extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.topLeft,
-                      child: Text(
-                        cadran.titulo,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: Text(
+                      cadran.titulo,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
                   Text(
@@ -89,12 +87,14 @@ class MatrizTareas extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text('${tareasCadran.length} tareas'),
-                      const Spacer(),
-                      const Icon(Icons.arrow_forward, size: 20),
-                    ],
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Text('${tareasCadran.length} tareas'),
+                        const Spacer(),
+                        const Icon(Icons.arrow_forward, size: 20),
+                      ],
+                    ),
                   ),
                 ],
               ),

@@ -90,7 +90,7 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
                 children: [
                   Expanded(
                     child: Text(
-                      'Matriz de Eisenhower - matriz screen',
+                      'Matriz de Eisenhower',
                       style: tema.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -136,31 +136,6 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
                     }
                     final tareas = snapshot.data ?? [];
                     return MatrizTareas(tareas: tareas);
-                    /* if (tareas.isEmpty) {
-                      return const Align(
-                        alignment: Alignment.topCenter,
-                        child: Card.filled(
-                          margin: EdgeInsets.zero,
-                          child: Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Text(
-                              'Aún no tienes tareas. Pulsa “Añadir tarea” para crear la primera.',
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                    final now = DateTime.now();
-                    final tareasOrdenadas = [...tareas]
-                      ..sort(
-                        (a, b) => b
-                            .getImportanceEmergencyScore(now)
-                            .compareTo(a.getImportanceEmergencyScore(now)),
-                      );
-                    return TareaList(
-                      tareasOrdenadas: tareasOrdenadas,
-                      repositorio: _repositorio,
-                    ); */
                   },
                 ),
               ),
