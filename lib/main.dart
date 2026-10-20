@@ -18,7 +18,7 @@ void main() async{
   runApp(const MainApp());
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatelessWidget{
   const MainApp({super.key, this.repositorio});
 
   final TareasRepository? repositorio;
@@ -37,15 +37,19 @@ class MainApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF6674E8),
-          primary: const Color(0xFF6674E8),
+          primary: const Color(0xFF4833B4),
+          onPrimary: Colors.white,
           secondary: const Color(0xFFBAE147),
+          onSecondary: Colors.black,
+          tertiary: const Color(0xFF6674E8),
+          onTertiary: Colors.white,
         ),
       ),
 
       home: StreamBuilder<User?>(
         stream: Auth().usuario,
         builder: (context, snapshot){
-          if (snapshot.connectionState == ConnectionState.waiting){
+          if(snapshot.connectionState == ConnectionState.waiting){
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
