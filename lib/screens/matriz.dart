@@ -3,9 +3,11 @@ import 'package:prisma/screens/home.dart';
 
 import '../data/tareas_repository.dart';
 import '../models/tarea_model.dart';
+import '../utils/navegacion_principal.dart';
 import '../widgets/matriz_tareas.dart';
 import '../widgets/tarea_list.dart';
 import 'perfil.dart';
+import 'pomodoro.dart';
 import 'tarea_formulario.dart';
 
 class MatrizScreen extends StatefulWidget {
@@ -59,8 +61,19 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
 
   Future<void> _abrirInicio() async{
     if (!mounted) return;
-    await Navigator.of(context)
-        .push<void>(MaterialPageRoute<void>(builder: (_) => HomeScreen()));
+    await abrirInicioConservandoPila(
+      context,
+      builder: (_) => HomeScreen(repositorio: _repositorio),
+    );
+  }
+
+  Future<void> _abrirPomodoro() async{
+    if (!mounted) return;
+    await navegarAPantallaPrincipal(
+      context,
+      ruta: rutaPomodoro,
+      builder: (_) => PomodoroScreen(repositorio: _repositorio),
+    );
   }
 
   Future<void> _crearTarea() async{
@@ -169,6 +182,7 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
             selectedIndex: 1,
             onDestinationSelected: (index){
               if (index == 0) _abrirInicio();
+              if (index == 2) _abrirPomodoro();
             },
             destinations: const [
               NavigationDestination(

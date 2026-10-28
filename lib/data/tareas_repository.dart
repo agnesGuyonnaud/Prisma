@@ -31,7 +31,7 @@ class TareasRepository {
     return await proveedor.openDatabase(
       ubicacion,
       options: OpenDatabaseOptions(
-        version: 4,
+        version: 6,
         onCreate: (Database db, int version) async {
           await _crearTablaTareas(db, 'tareas');
           await db.execute(
@@ -39,6 +39,8 @@ class TareasRepository {
           );
           await _crearTablaAsignaturas(db);
           await _crearTablaPreferencias(db);
+          await _crearTablaTiempoEstudio(db);
+          await _crearTablasMetasSemanales(db);
           await _insertarAsignaturasPorDefecto(db);
         },
         onUpgrade: (Database db, int versionAnterior, int versionNueva) async {
@@ -56,6 +58,14 @@ class TareasRepository {
               'ALTER TABLE tareas ADD COLUMN google_event_id TEXT',
             );
             await _crearTablaPreferencias(db);
+          }
+
+          if (versionAnterior < 5) {
+            await _crearTablaTiempoEstudio(db);
+          }
+
+          if (versionAnterior < 6) {
+            await _crearTablasMetasSemanales(db);
           }
         },
       ),
@@ -85,6 +95,42 @@ class TareasRepository {
         clave TEXT PRIMARY KEY,
         valor TEXT NOT NULL
       )
+    ''');
+  }
+
+  Future<void> _crearTablaTiempoEstudio(Database db) async {
+    await db.execute('''
+      CREATE TABLE tiempo_estudio (
+        asignatura TEXT PRIMARY KEY NOT NULL,
+        segundos INTEGER NOT NULL CHECK (
+          typeof(segundos) = 'integer' AND segundos >= 0
+        )
+      )
+    ''');
+  }
+
+  Future<void> _crearTablasMetasSemanales(Database db) async {
+    await db.execute('''
+      CREATE TABLE metas_semanales (
+        asignatura TEXT PRIMARY KEY NOT NULL,
+        segundos INTEGER NOT NULL CHECK (
+          typeof(segundos) = 'integer' AND segundos > 0
+        )
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE sesiones_estudio (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        asignatura TEXT NOT NULL,
+        segundos INTEGER NOT NULL CHECK (
+          typeof(segundos) = 'integer' AND segundos > 0
+        ),
+        fecha INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE INDEX sesiones_estudio_fecha_asignatura
+      ON sesiones_estudio (fecha, asignatura)
     ''');
   }
 
@@ -315,6 +361,110 @@ class TareasRepository {
   Future<void> eliminarAsignatura(int id) async {
     Database db = await database;
     await db.delete('asignaturas', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> registrarTiempoEstudio({
+    required String asignatura,
+    required int segundos,
+    DateTime? fecha,
+  }) async {
+    if (asignatura.trim().isEmpty) {
+      throw ArgumentError('Debes seleccionar una asignatura.');
+    }
+    if (segundos <= 0) {
+      throw ArgumentError.value(segundos, 'segundos', 'Debe ser mayor que 0.');
+    }
+
+    final db = await database;
+    final momento = (fecha ?? DateTime.now()).millisecondsSinceEpoch;
+    await db.transaction((txn) async {
+      await txn.insert('sesiones_estudio', {
+        'asignatura': asignatura.trim(),
+        'segundos': segundos,
+        'fecha': momento,
+      });
+      await txn.rawInsert(
+        '''
+        INSERT INTO tiempo_estudio (asignatura, segundos)
+        VALUES (?, ?)
+        ON CONFLICT(asignatura) DO UPDATE SET
+          segundos = tiempo_estudio.segundos + excluded.segundos
+        ''',
+        [asignatura.trim(), segundos],
+      );
+    });
+  }
+
+  Future<int> obtenerTiempoEstudio(String asignatura) async {
+    final db = await database;
+    final filas = await db.query(
+      'tiempo_estudio',
+      columns: ['segundos'],
+      where: 'asignatura = ?',
+      whereArgs: [asignatura.trim()],
+      limit: 1,
+    );
+    return filas.isEmpty ? 0 : filas.first['segundos'] as int;
+  }
+
+  Future<void> guardarMetaSemanal({
+    required String asignatura,
+    required int segundos,
+  }) async {
+    if (asignatura.trim().isEmpty) {
+      throw ArgumentError('Debes seleccionar una asignatura.');
+    }
+    if (segundos <= 0 || segundos > const Duration(hours: 168).inSeconds) {
+      throw ArgumentError.value(
+        segundos,
+        'segundos',
+        'La meta debe estar entre 1 segundo y 168 horas.',
+      );
+    }
+    final db = await database;
+    await db.insert(
+      'metas_semanales',
+      {'asignatura': asignatura.trim(), 'segundos': segundos},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, int>> listarMetasSemanales() async {
+    final db = await database;
+    final filas = await db.query('metas_semanales');
+    return {
+      for (final fila in filas)
+        fila['asignatura'] as String: fila['segundos'] as int,
+    };
+  }
+
+  Future<Map<String, int>> obtenerTiempoEstudioSemanal({
+    DateTime? fecha,
+  }) async {
+    final ahora = fecha ?? DateTime.now();
+    final inicioSemana = DateTime(
+      ahora.year,
+      ahora.month,
+      ahora.day,
+    ).subtract(Duration(days: ahora.weekday - DateTime.monday));
+    final finSemana = inicioSemana.add(const Duration(days: 7));
+    final db = await database;
+    final filas = await db.rawQuery(
+      '''
+      SELECT asignatura, SUM(segundos) AS segundos
+      FROM sesiones_estudio
+      WHERE fecha >= ? AND fecha < ?
+      GROUP BY asignatura
+      ''',
+      [
+        inicioSemana.millisecondsSinceEpoch,
+        finSemana.millisecondsSinceEpoch,
+      ],
+    );
+    return {
+      for (final fila in filas)
+        fila['asignatura'] as String: fila['segundos'] as int,
+    };
   }
 
   Future<void> cerrar() async {
