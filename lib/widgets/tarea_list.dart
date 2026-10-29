@@ -56,6 +56,12 @@ class _TareaListState extends State<TareaList> with RouteAware {
     super.dispose();
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta el repositorio de esta lista.
+  /// Output:
+  /// - `void`: actualiza la futura consulta de tareas.
+  /// Resumen:
+  /// - Vuelve a cargar tareas cuando se regresa a esta ruta.
   void _recargar(){
     final repositorio = _repositorio;
     if (!mounted) return;
@@ -65,6 +71,13 @@ class _TareaListState extends State<TareaList> with RouteAware {
     });
   }
 
+  /// Input:
+  /// - `tareas` (`List<Tarea>`): tareas candidatas para filtrar.
+  /// - `cadran` (`Cadran`): criterios de importancia y urgencia.
+  /// Output:
+  /// - `List<Tarea>`: tareas que corresponden al cuadrante.
+  /// Resumen:
+  /// - Filtra las tareas según sus valores de importancia y urgencia.
   List<Tarea> _filterByCadran(List<Tarea> tareas, Cadran cadran) =>
       tareas.where((tarea){
         final importante = tarea.importancia >= 3;
@@ -72,6 +85,12 @@ class _TareaListState extends State<TareaList> with RouteAware {
             tarea.isUrgente() == cadran.urgente;
       }).toList();
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para construir la lista.
+  /// Output:
+  /// - `Widget`: contenido de carga, error, vacío o lista de tareas.
+  /// Resumen:
+  /// - Carga y ordena tareas, aplicando el filtro de cuadrante si corresponde.
   @override
   Widget build(BuildContext context){
     return FutureBuilder<List<Tarea>>(

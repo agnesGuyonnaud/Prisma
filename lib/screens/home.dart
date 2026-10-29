@@ -54,6 +54,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   @override
   void didPopNext() => _recargarProgresosMetas();
 
+  /// Input:
+  /// - No recibe parámetros; consulta el repositorio de esta pantalla.
+  /// Output:
+  /// - `Future<List<MetaEstudioSemanal>>`: metas y tiempos semanales por asignatura.
+  /// Resumen:
+  /// - Combina asignaturas, metas configuradas y tiempo estudiado.
   Future<List<MetaEstudioSemanal>> _cargarProgresosMetas() async {
     final asignaturasFuture = _repositorio.listarAsignaturas();
     final metasFuture = _repositorio.listarMetasSemanales();
@@ -71,17 +77,35 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     ];
   }
 
+  /// Input:
+  /// - No recibe parámetros; inicia una nueva consulta de progreso.
+  /// Output:
+  /// - `void`: actualiza el estado de la pantalla.
+  /// Resumen:
+  /// - Recarga y muestra los progresos semanales.
   void _recargarProgresosMetas() {
     setState(() {
       _progresosMetas = _cargarProgresosMetas();
     });
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta el usuario autenticado.
+  /// Output:
+  /// - `String`: primer nombre visible o `"estudiante"` como valor por defecto.
+  /// Resumen:
+  /// - Obtiene el nombre corto que se muestra en el saludo de Inicio.
   String get _nombre {
     final nombre = FirebaseAuth.instance.currentUser?.displayName?.trim() ?? "";
     return nombre.isEmpty ? "estudiante" : nombre.split(" ").first;
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina al cerrar el formulario de tarea.
+  /// Resumen:
+  /// - Abre el formulario para crear una tarea.
   Future<void> _crearTarea() async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
@@ -90,6 +114,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina cuando finaliza la navegación a Matriz.
+  /// Resumen:
+  /// - Navega a la matriz de tareas.
   Future<void> _abrirMatriz() async {
     if (!mounted) return;
     await navegarAPantallaPrincipal(
@@ -99,6 +129,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina cuando finaliza la navegación a Pomodoro.
+  /// Resumen:
+  /// - Abre Pomodoro y recarga las metas al volver.
   Future<void> _abrirPomodoro() async {
     if (!mounted) return;
     await navegarAPantallaPrincipal(
@@ -109,6 +145,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     if (mounted) _recargarProgresosMetas();
   }
 
+  /// Input:
+  /// - `progreso` (`MetaEstudioSemanal`): asignatura y valores actuales de la meta.
+  /// Output:
+  /// - `Future<void>`: termina al guardar o cancelar la edición.
+  /// Resumen:
+  /// - Permite editar la meta semanal y guarda los segundos correspondientes.
   Future<void> _editarMeta(MetaEstudioSemanal progreso) async {
     final horasActuales = progreso.segundosMeta == null
         ? ''
@@ -193,12 +235,24 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     }
   }
 
+  /// Input:
+  /// - `segundos` (`int`): duración que se mostrará en horas y minutos.
+  /// Output:
+  /// - `String`: tiempo con el formato `horas:minutos`.
+  /// Resumen:
+  /// - Convierte segundos a una representación legible para el resumen.
   String _formatearTiempo(int segundos) {
     final horas = segundos ~/ Duration.secondsPerHour;
     final minutos = (segundos % Duration.secondsPerHour) ~/ 60;
     return '$horas:${minutos.toString().padLeft(2, '0')}';
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `void`: inicia la navegación al perfil.
+  /// Resumen:
+  /// - Abre la pantalla de perfil.
   void _abrirPerfil() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -207,6 +261,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     );
   }
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para tema, navegación y widgets.
+  /// Output:
+  /// - `Widget`: devuelve la pantalla de inicio.
+  /// Resumen:
+  /// - Construye el resumen semanal, las tareas y los accesos principales.
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);

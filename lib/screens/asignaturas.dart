@@ -22,6 +22,12 @@ class _AsignaturasScreenState extends State<AsignaturasScreen>{
     cargarAsignaturas();
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta las asignaturas del repositorio.
+  /// Output:
+  /// - `Future<void>`: termina al actualizar la lista visible.
+  /// Resumen:
+  /// - Carga las asignaturas y actualiza el estado de carga de la pantalla.
   Future<void> cargarAsignaturas() async{
     setState((){
       cargando = true;
@@ -34,6 +40,12 @@ class _AsignaturasScreenState extends State<AsignaturasScreen>{
     });
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el repositorio asociado a la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina cuando se cierra el diálogo de edición.
+  /// Resumen:
+  /// - Abre el diálogo de creación y recarga la lista si se guarda una asignatura.
   Future<void> crearAsignatura() async{
     Asignatura? guardada = await mostrarDialogoAsignatura(
       context: context,
@@ -44,6 +56,12 @@ class _AsignaturasScreenState extends State<AsignaturasScreen>{
     }
   }
 
+  /// Input:
+  /// - `asignatura` (`Asignatura`): asignatura cuyos datos se editarán.
+  /// Output:
+  /// - `Future<void>`: termina cuando se cierra el diálogo de edición.
+  /// Resumen:
+  /// - Abre el diálogo precargado y actualiza la lista si se guarda.
   Future<void> editarAsignatura(Asignatura asignatura) async{
     Asignatura? guardada = await mostrarDialogoAsignatura(
       context: context,
@@ -55,6 +73,12 @@ class _AsignaturasScreenState extends State<AsignaturasScreen>{
     }
   }
 
+  /// Input:
+  /// - `asignatura` (`Asignatura`): asignatura que se propone eliminar.
+  /// Output:
+  /// - `Future<void>`: termina al confirmar o cancelar la eliminación.
+  /// Resumen:
+  /// - Solicita confirmación, elimina la asignatura y muestra el resultado.
   Future<void> borrarAsignatura(Asignatura asignatura) async{
     bool? confirmar = await showDialog<bool>(
       context: context,
@@ -90,6 +114,12 @@ class _AsignaturasScreenState extends State<AsignaturasScreen>{
     }
   }
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para construir la interfaz.
+  /// Output:
+  /// - `Widget`: pantalla con la lista de asignaturas y sus acciones.
+  /// Resumen:
+  /// - Muestra el estado de carga, vacío o la lista disponible.
   @override
   Widget build(BuildContext context){
     if (cargando){
@@ -161,6 +191,14 @@ class _AsignaturasScreenState extends State<AsignaturasScreen>{
   }
 }
 
+/// Input:
+/// - `context` (`BuildContext`): contexto donde se presenta el diálogo.
+/// - `repositorio` (`TareasRepository`): persistencia para guardar la asignatura.
+/// - `asignatura` (`Asignatura?`): datos opcionales para editar en vez de crear.
+/// Output:
+/// - `Future<Asignatura?>`: asignatura guardada o `null` si se cancela.
+/// Resumen:
+/// - Presenta el formulario modal de creación o edición de asignatura.
 Future<Asignatura?> mostrarDialogoAsignatura({
   required BuildContext context,
   required TareasRepository repositorio,
@@ -218,6 +256,12 @@ class _DialogoAsignaturaState extends State<_DialogoAsignatura>{
     super.dispose();
   }
 
+  /// Input:
+  /// - No recibe parámetros; toma nombre y color de los controles del diálogo.
+  /// Output:
+  /// - `Future<void>`: termina al guardar, mostrar un error o cerrar el diálogo.
+  /// Resumen:
+  /// - Valida y persiste la asignatura, devolviéndola a la pantalla anterior.
   Future<void> guardar() async{
     String nombre = textoNombre.text.trim();
     if (nombre.isEmpty){
@@ -245,6 +289,12 @@ class _DialogoAsignaturaState extends State<_DialogoAsignatura>{
     }
   }
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para construir el diálogo.
+  /// Output:
+  /// - `Widget`: formulario con campos, colores y acciones de asignatura.
+  /// Resumen:
+  /// - Construye el diálogo de creación o edición.
   @override
   Widget build(BuildContext context){
     bool esEdicion = widget.asignatura != null;

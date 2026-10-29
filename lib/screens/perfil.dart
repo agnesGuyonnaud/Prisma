@@ -28,6 +28,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
     _cargarEstadoCalendar();
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta las preferencias de Calendar.
+  /// Output:
+  /// - `Future<void>`: termina al actualizar el estado de conexión visible.
+  /// Resumen:
+  /// - Carga si la sincronización está activa y qué cuenta está vinculada.
   Future<void> _cargarEstadoCalendar() async{
     try{
       final habilitada =
@@ -46,6 +52,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
   }
 
+  /// Input:
+  /// - `habilitar` (`bool`): indica si se activará o desactivará la sincronización.
+  /// Output:
+  /// - `Future<void>`: termina tras confirmar y actualizar la preferencia.
+  /// Resumen:
+  /// - Solicita confirmación y gestiona la vinculación de tareas con Calendar.
   Future<void> _cambiarSincronizacionCalendar(bool habilitar) async{
     if (_calendarBusy) return;
     if (habilitar){
@@ -133,12 +145,24 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
   }
 
+  /// Input:
+  /// - `mensaje` (`String`): texto que se presentará al usuario.
+  /// Output:
+  /// - `void`: muestra una notificación temporal.
+  /// Resumen:
+  /// - Presenta un resultado o error en la pantalla de perfil.
   void _mostrarMensaje(String mensaje){
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el estado de Calendar y la autenticación actual.
+  /// Output:
+  /// - `Future<void>`: termina al cancelar o cerrar la sesión.
+  /// Resumen:
+  /// - Confirma el cierre, desactiva Calendar si estaba activo y cierra sesión.
   Future<void> cerrarSesion() async{
     bool? confirmar = await showDialog<bool>(
       context: context,
@@ -191,6 +215,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `void`: inicia la navegación a la lista de asignaturas.
+  /// Resumen:
+  /// - Abre la administración de asignaturas.
   void irAsignaturas(){
     Navigator.push(
       context,
@@ -202,6 +232,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para tema, usuario y navegación.
+  /// Output:
+  /// - `Widget`: devuelve la interfaz del perfil.
+  /// Resumen:
+  /// - Muestra datos de cuenta, opciones de Calendar y acciones de perfil.
   @override
   Widget build(BuildContext context){
     final tema = Theme.of(context);

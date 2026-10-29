@@ -1,3 +1,10 @@
+/// Input:
+/// - `fecha` (`DateTime`): fecha y hora que se mostrarán.
+/// - `corta` (`bool`): usa el nombre abreviado del mes cuando es `true`.
+/// Output:
+/// - `String`: fecha localizada con la hora en formato de 24 horas.
+/// Resumen:
+/// - Formatea una fecha límite para mostrarla en sus variantes larga o corta.
 String fechaTarea(DateTime fecha, {bool corta = false}){
   const meses = [
     'enero',

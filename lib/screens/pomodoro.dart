@@ -59,6 +59,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
   bool _cargandoAsignaturas = true;
   bool _enMarcha = false;
 
+  /// Input:
+  /// - No recibe parámetros; usa el reloj inyectado o el reloj del sistema.
+  /// Output:
+  /// - `DateTime`: instante actual de referencia para el temporizador.
+  /// Resumen:
+  /// - Centraliza el reloj real o el reloj controlado por pruebas.
   DateTime get _ahora => widget.reloj?.call() ?? DateTime.now();
 
   @override
@@ -124,6 +130,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     }
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta las asignaturas del repositorio.
+  /// Output:
+  /// - `Future<void>`: termina al actualizar la lista de asignaturas.
+  /// Resumen:
+  /// - Carga las asignaturas disponibles para asociar al tiempo de estudio.
   Future<void> _cargarAsignaturas() async {
     setState(() {
       _cargandoAsignaturas = true;
@@ -145,6 +157,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     }
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina al guardar o cancelar la creación.
+  /// Resumen:
+  /// - Abre el diálogo de asignatura y actualiza la selección al guardarla.
   Future<void> _crearAsignatura() async {
     final nueva = await mostrarDialogoAsignatura(
       context: context,
@@ -156,6 +174,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     setState(() => _asignatura = nueva.nombre);
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina cuando se cierra la pantalla de Inicio.
+  /// Resumen:
+  /// - Abre Inicio conservando el Pomodoro en la pila de navegación.
   Future<void> _abrirInicio() async {
     if (!mounted) return;
     await abrirInicioConservandoPila(
@@ -164,6 +188,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina cuando se cierra la Matriz.
+  /// Resumen:
+  /// - Abre Matriz encima de Pomodoro para conservar su estado.
   Future<void> _abrirMatriz() async {
     if (!mounted) return;
     await Navigator.of(context).push<void>(
@@ -174,6 +204,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `void`: inicia la navegación al perfil.
+  /// Resumen:
+  /// - Abre la pantalla de perfil.
   void _abrirPerfil() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -182,6 +218,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; utiliza el estado actual del temporizador.
+  /// Output:
+  /// - `Future<void>`: termina al iniciar o pausar y guardar el avance.
+  /// Resumen:
+  /// - Alterna el temporizador y coordina sus avisos y el registro de estudio.
   Future<void> _alternarTemporizador() async {
     if (_enMarcha) {
       await _sincronizarTemporizador();
@@ -257,6 +299,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     }
   }
 
+  /// Input:
+  /// - No recibe parámetros; presenta instrucciones para configurar Android.
+  /// Output:
+  /// - `void`: muestra un aviso con una acción para pedir permiso.
+  /// Resumen:
+  /// - Informa que los avisos no se programan sin permiso de alarmas exactas.
   void _mostrarAvisoAlarmasInexactas() {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -288,6 +336,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       );
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el temporizador y sincronizador de la pantalla.
+  /// Output:
+  /// - `void`: inicia un reloj periódico de actualización.
+  /// Resumen:
+  /// - Actualiza el temporizador cada segundo mientras está en marcha.
   void _iniciarReloj() {
     _timer?.cancel();
     _timer = Timer.periodic(
@@ -298,6 +352,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     );
   }
 
+  /// Input:
+  /// - `guardarTodo` (`bool`): fuerza el guardado del avance pendiente.
+  /// Output:
+  /// - `Future<void>`: completa la sincronización en curso o la inicia.
+  /// Resumen:
+  /// - Evita sincronizaciones simultáneas y mantiene el tiempo al día.
   Future<void> _sincronizarTemporizador({bool guardarTodo = false}) {
     final actualizacionEnCurso = _sincronizacionEnCurso;
     if (actualizacionEnCurso != null) {
@@ -321,6 +381,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     });
   }
 
+  /// Input:
+  /// - `guardarTodo` (`bool`): indica si debe persistir todo el avance actual.
+  /// Output:
+  /// - `Future<void>`: termina al actualizar fases y persistir tiempo pendiente.
+  /// Resumen:
+  /// - Calcula el tiempo transcurrido y procesa los cambios de fase.
   Future<void> _procesarAvance({required bool guardarTodo}) async {
     final finInicial = _finDeFase;
     if (!_enMarcha || finInicial == null) return;
@@ -353,6 +419,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     }
   }
 
+  /// Input:
+  /// - `transcurrido` (`Duration`): intervalo de estudio que se sumará.
+  /// Output:
+  /// - `void`: actualiza el acumulado pendiente de guardar.
+  /// Resumen:
+  /// - Acumula milisegundos y conserva los segundos completos de estudio.
   void _acumularTiempoEstudio(Duration transcurrido) {
     final milisegundos = transcurrido.inMilliseconds;
     if (milisegundos <= 0) return;
@@ -361,10 +433,22 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     _milisegundosEstudioRestantes = total % Duration.millisecondsPerSecond;
   }
 
+  /// Input:
+  /// - `fase` (`_FasePomodoro`): fase de estudio o descanso.
+  /// Output:
+  /// - `Duration`: duración configurada para esa fase.
+  /// Resumen:
+  /// - Convierte la fase actual en su duración correspondiente.
   Duration _duracionDe(_FasePomodoro fase) => Duration(
     minutes: fase == _FasePomodoro.estudio ? _minutosEstudio : _minutosDescanso,
   );
 
+  /// Input:
+  /// - No recibe parámetros; utiliza la fase y hora de finalización actuales.
+  /// Output:
+  /// - `Future<void>`: termina al solicitar la programación de los avisos.
+  /// Resumen:
+  /// - Genera y programa avisos para las siguientes fases Pomodoro.
   Future<void> _programarAvisos() async {
     final primerFin = _finDeFase;
     if (!_enMarcha || primerFin == null) return;
@@ -390,10 +474,22 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     await _notificaciones.programar(avisos);
   }
 
+  /// Input:
+  /// - `error` (`Object`): error producido al preparar o programar avisos.
+  /// Output:
+  /// - `void`: registra el error en la consola.
+  /// Resumen:
+  /// - Conserva el detalle técnico sin interrumpir al usuario con un aviso.
   void _registrarErrorAvisos(Object error) {
     debugPrint('No se pudieron programar los avisos Pomodoro: $error');
   }
 
+  /// Input:
+  /// - `error` (`Object`): error producido al cancelar avisos.
+  /// Output:
+  /// - `void`: registra el error y puede mostrar una notificación en pantalla.
+  /// Resumen:
+  /// - Informa que no fue posible cancelar avisos programados.
   void _notificarErrorCancelarAvisos(Object error) {
     debugPrint('No se pudieron cancelar los avisos Pomodoro: $error');
     if (!mounted) return;
@@ -409,6 +505,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       );
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa la fase y configuración actuales.
+  /// Output:
+  /// - `Future<void>`: termina al detener y reiniciar el temporizador.
+  /// Resumen:
+  /// - Cancela avisos, guarda el tiempo pendiente y vuelve al inicio del ciclo.
   Future<void> _reiniciar() async {
     await _sincronizarTemporizador();
     _timer?.cancel();
@@ -438,6 +540,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     });
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa los segundos pendientes y la asignatura activa.
+  /// Output:
+  /// - `Future<void>`: termina cuando todo el tiempo pendiente queda guardado.
+  /// Resumen:
+  /// - Persiste el avance de estudio evitando duplicar guardados concurrentes.
   Future<void> _guardarTiempoPendiente() async {
     if (_segundosPendientes == 0) return;
 
@@ -470,12 +578,24 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     if (_segundosPendientes > 0) return _guardarTiempoPendiente();
   }
 
+  /// Input:
+  /// - `error` (`Object`): error producido al guardar tiempo de estudio.
+  /// Output:
+  /// - `void`: registra el error y actualiza el mensaje visible.
+  /// Resumen:
+  /// - Informa que el guardado falló y que se reintentará.
   void _notificarErrorGuardado(Object error) {
     _errorGuardado = error.toString();
     debugPrint('No se pudo guardar el tiempo de estudio: $error');
     if (mounted) _mostrarErrorGuardado(error);
   }
 
+  /// Input:
+  /// - `error` (`Object`): detalle del fallo que se comunicará al usuario.
+  /// Output:
+  /// - `void`: actualiza el estado y muestra un mensaje en pantalla.
+  /// Resumen:
+  /// - Indica que el tiempo no se guardó y se conservará para reintentar.
   void _mostrarErrorGuardado(Object error) {
     if (!mounted) return;
     setState(() => _errorGuardado = error.toString());
@@ -490,6 +610,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       );
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa la duración configurada en el temporizador.
+  /// Output:
+  /// - `Future<void>`: termina al guardar o cancelar los ajustes.
+  /// Resumen:
+  /// - Valida y aplica las duraciones de estudio y descanso.
   Future<void> _mostrarAjustes() async {
     if (_enMarcha) return;
     _minutosEstudioController.text = _minutosEstudio.toString();
@@ -556,6 +682,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     });
   }
 
+  /// Input:
+  /// - `valor` (`String?`): minutos ingresados para una fase.
+  /// Output:
+  /// - `String?`: mensaje de error o `null` cuando el valor es válido.
+  /// Resumen:
+  /// - Verifica que la duración sea un entero entre 1 y 180 minutos.
   String? _validarMinutos(String? valor) {
     final minutos = int.tryParse(valor ?? '');
     if (minutos == null || minutos < 1 || minutos > 180) {
@@ -564,6 +696,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     return null;
   }
 
+  /// Input:
+  /// - No recibe parámetros; utiliza el tiempo restante actual.
+  /// Output:
+  /// - `String`: cuenta regresiva con el formato `mm:ss`.
+  /// Resumen:
+  /// - Convierte el tiempo restante en el texto del contador.
   String get _textoRestante {
     final minutos = _tiempoRestante.inMinutes;
     final segundos = _tiempoRestante.inSeconds.remainder(60);
@@ -571,8 +709,20 @@ class _PomodoroScreenState extends State<PomodoroScreen>
         '${segundos.toString().padLeft(2, '0')}';
   }
 
+  /// Input:
+  /// - No recibe parámetros; utiliza la fase seleccionada.
+  /// Output:
+  /// - `Duration`: duración configurada para la fase actual.
+  /// Resumen:
+  /// - Expone la duración de fase usada para calcular el progreso circular.
   Duration get _duracionFase => _duracionDe(_fase);
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para tema, navegación y widgets.
+  /// Output:
+  /// - `Widget`: devuelve la pantalla del temporizador Pomodoro.
+  /// Resumen:
+  /// - Construye el selector, contador, ajustes y navegación del temporizador.
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);

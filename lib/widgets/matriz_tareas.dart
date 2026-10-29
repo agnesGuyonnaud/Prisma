@@ -9,12 +9,24 @@ class MatrizTareas extends StatelessWidget {
 
   final List<Tarea> tareas;
 
+  /// Input:
+  /// - `cadran` (`Cadran`): criterios de importancia y urgencia.
+  /// Output:
+  /// - `List<Tarea>`: tareas que pertenecen al cuadrante.
+  /// Resumen:
+  /// - Filtra la lista recibida para un cuadrante específico.
   List<Tarea> _tareasDelCadran(Cadran cadran) => tareas.where((tarea){
     final importante = tarea.importancia >= 3;
     return importante == cadran.importante &&
         tarea.isUrgente() == cadran.urgente;
   }).toList();
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para el tema y la navegación.
+  /// Output:
+  /// - `Widget`: cuadrícula de cuadrantes de Eisenhower.
+  /// Resumen:
+  /// - Construye los cuadrantes y sus accesos a tareas filtradas.
   @override
   Widget build(BuildContext context){
     final colores = Theme.of(context).colorScheme;
@@ -112,6 +124,12 @@ class _ListaCadranScreen extends StatelessWidget {
 
   final Cadran cadran;
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para construir esta pantalla.
+  /// Output:
+  /// - `Widget`: pantalla con título del cuadrante y tareas filtradas.
+  /// Resumen:
+  /// - Presenta las tareas del cuadrante seleccionado.
   @override
   Widget build(BuildContext context){
     return Scaffold(

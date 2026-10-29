@@ -51,6 +51,12 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
     super.dispose();
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el repositorio de esta pantalla.
+  /// Output:
+  /// - `void`: no devuelve un valor.
+  /// Resumen:
+  /// - Actualiza la consulta de tareas para volver a cargar la matriz.
   void _recargar(){
     if (!mounted) return;
     final consulta = _repositorio.listar();
@@ -59,6 +65,12 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
     });
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina cuando se abre Inicio.
+  /// Resumen:
+  /// - Navega a Inicio conservando la pila actual.
   Future<void> _abrirInicio() async{
     if (!mounted) return;
     await abrirInicioConservandoPila(
@@ -67,6 +79,12 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina cuando se abre Pomodoro.
+  /// Resumen:
+  /// - Navega a Pomodoro como pantalla principal.
   Future<void> _abrirPomodoro() async{
     if (!mounted) return;
     await navegarAPantallaPrincipal(
@@ -76,6 +94,12 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina cuando se cierra el formulario de tarea.
+  /// Resumen:
+  /// - Abre el formulario para crear una tarea.
   Future<void> _crearTarea() async{
     await Navigator.of(context).push<Tarea>(
       MaterialPageRoute(
@@ -84,6 +108,12 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `void`: inicia la navegación sin esperar su resultado.
+  /// Resumen:
+  /// - Abre la pantalla de perfil.
   void _abrirPerfil(){
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -92,6 +122,12 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
     );
   }
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para tema, navegación y widgets.
+  /// Output:
+  /// - `Widget`: devuelve la interfaz de la matriz de tareas.
+  /// Resumen:
+  /// - Construye la pantalla, la lista de tareas y su navegación inferior.
   @override
   Widget build(BuildContext context){
     final tema = Theme.of(context);

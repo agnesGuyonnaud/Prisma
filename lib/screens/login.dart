@@ -36,6 +36,12 @@ class _LoginScreenState extends State<LoginScreen>{
     super.dispose();
   }
 
+  /// Input:
+  /// - `accion` (`Future<String?> Function()`): operación de autenticación.
+  /// Output:
+  /// - `Future<void>`: termina al completar la operación y actualizar la carga.
+  /// Resumen:
+  /// - Ejecuta una acción de autenticación y presenta el error que devuelva.
   Future<void> _ejecutar(Future<String?> Function() accion) async{
     setState(() => _cargando = true);
     try{
@@ -48,6 +54,12 @@ class _LoginScreenState extends State<LoginScreen>{
     }
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el formulario y modo actual.
+  /// Output:
+  /// - `Future<void>`: termina al validar y ejecutar el acceso o registro.
+  /// Resumen:
+  /// - Valida los campos y llama al flujo de autenticación correspondiente.
   Future<void> _continuar() async{
     if(!_formulario.currentState!.validate()) return;
     await _ejecutar(
@@ -57,6 +69,12 @@ class _LoginScreenState extends State<LoginScreen>{
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el correo escrito en el formulario.
+  /// Output:
+  /// - `Future<void>`: termina tras solicitar el restablecimiento.
+  /// Resumen:
+  /// - Valida el correo y solicita el envío del enlace de recuperación.
   Future<void> _recuperar() async{
     if(_validarCorreo(_correo.text) != null){
       _mostrar("Escribe tu correo para recuperar la contraseña");
@@ -68,6 +86,12 @@ class _LoginScreenState extends State<LoginScreen>{
     });
   }
 
+  /// Input:
+  /// - `mensaje` (`String`): texto que se mostrará en pantalla.
+  /// Output:
+  /// - `void`: presenta una notificación temporal.
+  /// Resumen:
+  /// - Muestra mensajes de autenticación al usuario.
   void _mostrar(String mensaje){
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -76,6 +100,12 @@ class _LoginScreenState extends State<LoginScreen>{
       );
   }
 
+  /// Input:
+  /// - No recibe parámetros; alterna entre acceso y registro.
+  /// Output:
+  /// - `void`: actualiza el modo y reinicia la validación del formulario.
+  /// Resumen:
+  /// - Cambia entre inicio de sesión y creación de cuenta.
   void _cambiarModo(){
     setState((){
       _registrando = !_registrando;
@@ -83,6 +113,12 @@ class _LoginScreenState extends State<LoginScreen>{
     });
   }
 
+  /// Input:
+  /// - `valor` (`String?`): correo ingresado, posiblemente vacío.
+  /// Output:
+  /// - `String?`: mensaje de validación o `null` si el correo es válido.
+  /// Resumen:
+  /// - Comprueba que se haya ingresado un correo con formato aceptado.
   String? _validarCorreo(String? valor){
     final correo = valor?.trim() ?? "";
     if(correo.isEmpty) return "Ingresa tu correo";
@@ -92,6 +128,12 @@ class _LoginScreenState extends State<LoginScreen>{
     return null;
   }
 
+  /// Input:
+  /// - `valor` (`String?`): contraseña ingresada.
+  /// Output:
+  /// - `String?`: mensaje de validación o `null` si cumple las reglas.
+  /// Resumen:
+  /// - Comprueba que la clave no esté vacía y cumpla el mínimo de registro.
   String? _validarClave(String? valor){
     if(valor == null || valor.isEmpty) return "Ingresa tu contraseña";
     if(_registrando && valor.length < 6){
@@ -100,6 +142,12 @@ class _LoginScreenState extends State<LoginScreen>{
     return null;
   }
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para tema, formulario y acciones.
+  /// Output:
+  /// - `Widget`: devuelve la pantalla de acceso o registro.
+  /// Resumen:
+  /// - Construye el formulario de autenticación y sus opciones asociadas.
   @override
   Widget build(BuildContext context){
     final tema = Theme.of(context);

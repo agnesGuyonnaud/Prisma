@@ -63,6 +63,12 @@ class _TareaFormularioState extends State<TareaFormulario> {
     _cargarAsignaturas();
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta las asignaturas del repositorio.
+  /// Output:
+  /// - `Future<void>`: termina al actualizar las asignaturas disponibles.
+  /// Resumen:
+  /// - Carga las asignaturas para el selector del formulario.
   Future<void> _cargarAsignaturas() async {
     final lista = await widget.repositorio.listarAsignaturas();
     if (!mounted) return;
@@ -71,6 +77,12 @@ class _TareaFormularioState extends State<TareaFormulario> {
     });
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el repositorio y contexto del formulario.
+  /// Output:
+  /// - `Future<void>`: termina cuando se guarda o cancela el diálogo.
+  /// Resumen:
+  /// - Permite crear una asignatura sin salir del formulario de tarea.
   Future<void> _crearAsignaturaRapida() async {
     final nueva = await mostrarDialogoAsignatura(
       context: context,
@@ -91,9 +103,21 @@ class _TareaFormularioState extends State<TareaFormulario> {
     super.dispose();
   }
 
+  /// Input:
+  /// - `valor` (`String?`): contenido del campo que se validará.
+  /// Output:
+  /// - `String?`: mensaje si está vacío o `null` si tiene contenido.
+  /// Resumen:
+  /// - Valida que el campo obligatorio contenga texto.
   String? _obligatorio(String? valor) =>
       valor == null || valor.trim().isEmpty ? 'Completa este campo' : null;
 
+  /// Input:
+  /// - No recibe parámetros; usa la fecha y hora límite actuales.
+  /// Output:
+  /// - `Future<void>`: termina al seleccionar o cancelar fecha y hora.
+  /// Resumen:
+  /// - Permite elegir la fecha y hora límite de la tarea.
   Future<void> _elegirFecha() async {
     final fecha = await showDatePicker(
       context: context,
@@ -125,6 +149,12 @@ class _TareaFormularioState extends State<TareaFormulario> {
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; obtiene los valores de los controles del formulario.
+  /// Output:
+  /// - `Future<void>`: termina al guardar la tarea o informar un error.
+  /// Resumen:
+  /// - Valida y persiste la tarea, sincronizándola con Calendar si corresponde.
   Future<void> _guardar() async {
     if (_guardando || !_formulario.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
@@ -177,6 +207,12 @@ class _TareaFormularioState extends State<TareaFormulario> {
     }
   }
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para tema, validación y navegación.
+  /// Output:
+  /// - `Widget`: devuelve el formulario de creación o edición de tarea.
+  /// Resumen:
+  /// - Construye los campos, selectores y acciones para editar una tarea.
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);

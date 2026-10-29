@@ -38,34 +38,52 @@ class TareaMini extends StatefulWidget {
 class _TareaMiniState extends State<TareaMini> {
   late Future<Color?> _colorAsignatura;
 
+  /// Input:
+  /// - No recibe parámetros; consulta el repositorio inyectado o el singleton.
+  /// Output:
+  /// - `TareasRepository`: repositorio asociado a la tarjeta.
+  /// Resumen:
+  /// - Centraliza la selección del repositorio para cargar datos de asignatura.
   TareasRepository get _repositorio =>
       widget.repositorio ?? TareasRepository.instancia;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _colorAsignatura = _buscarColorAsignatura();
   }
 
   @override
-  void didUpdateWidget(covariant TareaMini oldWidget){
+  void didUpdateWidget(covariant TareaMini oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.asignatura != widget.asignatura ||
-        oldWidget.repositorio != widget.repositorio){
+        oldWidget.repositorio != widget.repositorio) {
       _colorAsignatura = _buscarColorAsignatura();
     }
   }
 
-  Future<Color?> _buscarColorAsignatura() async{
+  /// Input:
+  /// - No recibe parámetros; usa la asignatura y repositorio de la tarjeta.
+  /// Output:
+  /// - `Future<Color?>`: color de la asignatura o `null` si no existe.
+  /// Resumen:
+  /// - Busca el color que se utilizará para identificar la asignatura.
+  Future<Color?> _buscarColorAsignatura() async {
     final asignaturas = await _repositorio.listarAsignaturas();
-    for (final asignatura in asignaturas){
+    for (final asignatura in asignaturas) {
       if (asignatura.nombre == widget.asignatura) return asignatura.color;
     }
     return null;
   }
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto de tema y árbol de widgets.
+  /// Output:
+  /// - `Widget`: tarjeta resumida con título, asignatura y datos de tarea.
+  /// Resumen:
+  /// - Construye la tarjeta compacta con estado y progreso de subtareas.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
 
@@ -99,9 +117,8 @@ class _TareaMiniState extends State<TareaMini> {
                     flex: 3,
                     child: FutureBuilder<Color?>(
                       future: _colorAsignatura,
-                      builder: (context, snapshot){
-                        final color =
-                            snapshot.data ?? widget.colorAsignatura;
+                      builder: (context, snapshot) {
+                        final color = snapshot.data ?? widget.colorAsignatura;
                         final colorTexto =
                             ThemeData.estimateBrightnessForColor(color) ==
                                 Brightness.dark
@@ -192,8 +209,14 @@ class _DatoMini extends StatelessWidget {
   final String etiqueta;
   final String valor;
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto de tema y accesibilidad.
+  /// Output:
+  /// - `Widget`: fila accesible con icono, etiqueta y valor.
+  /// Resumen:
+  /// - Construye una línea compacta de información de la tarea.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final tema = Theme.of(context);
 
     return Semantics(

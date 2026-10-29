@@ -12,6 +12,12 @@ class TareasRepository {
   final String? ruta;
   Future<Database>? _abriendo;
 
+  /// Input:
+  /// - No recibe parámetros; usa la fábrica y ruta configuradas.
+  /// Output:
+  /// - `Future<Database>`: base de datos abierta o en proceso de apertura.
+  /// Resumen:
+  /// - Comparte la apertura concurrente y permite reintentar si falla.
   Future<Database> get database async {
     final apertura = _abriendo ??= _iniciarBaseDeDatos();
     try {
@@ -22,6 +28,12 @@ class TareasRepository {
     }
   }
 
+  /// Input:
+  /// - No recibe parámetros; utiliza las opciones de fábrica y ruta del repositorio.
+  /// Output:
+  /// - `Future<Database>`: conexión abierta y migrada a la versión actual.
+  /// Resumen:
+  /// - Abre la base de datos y crea o migra sus tablas.
   Future<Database> _iniciarBaseDeDatos() async {
     final proveedor = fabrica ?? databaseFactory;
     final ubicacion =
@@ -72,6 +84,13 @@ class TareasRepository {
     );
   }
 
+  /// Input:
+  /// - `db` (`Database`): conexión donde se creará la tabla.
+  /// - `nombre` (`String`): nombre SQL de la tabla de tareas.
+  /// Output:
+  /// - `Future<void>`: termina al ejecutar la creación.
+  /// Resumen:
+  /// - Crea la tabla de tareas con sus columnas y restricciones.
   Future<void> _crearTablaTareas(Database db, String nombre) async {
     await db.execute('''
       CREATE TABLE $nombre (
@@ -89,6 +108,12 @@ class TareasRepository {
     ''');
   }
 
+  /// Input:
+  /// - `db` (`Database`): conexión donde se creará la tabla.
+  /// Output:
+  /// - `Future<void>`: termina al ejecutar la creación.
+  /// Resumen:
+  /// - Crea la tabla de preferencias clave-valor.
   Future<void> _crearTablaPreferencias(Database db) async {
     await db.execute('''
       CREATE TABLE preferencias (
@@ -98,6 +123,12 @@ class TareasRepository {
     ''');
   }
 
+  /// Input:
+  /// - `db` (`Database`): conexión donde se creará la tabla.
+  /// Output:
+  /// - `Future<void>`: termina al ejecutar la creación.
+  /// Resumen:
+  /// - Crea la tabla con el total de segundos estudiados por asignatura.
   Future<void> _crearTablaTiempoEstudio(Database db) async {
     await db.execute('''
       CREATE TABLE tiempo_estudio (
@@ -109,6 +140,12 @@ class TareasRepository {
     ''');
   }
 
+  /// Input:
+  /// - `db` (`Database`): conexión donde se crearán las tablas e índice.
+  /// Output:
+  /// - `Future<void>`: termina al completar el esquema semanal.
+  /// Resumen:
+  /// - Crea metas semanales, sesiones de estudio y su índice de consulta.
   Future<void> _crearTablasMetasSemanales(Database db) async {
     await db.execute('''
       CREATE TABLE metas_semanales (
@@ -134,6 +171,12 @@ class TareasRepository {
     ''');
   }
 
+  /// Input:
+  /// - `db` (`Database`): conexión con el esquema antiguo que se migrará.
+  /// Output:
+  /// - `Future<void>`: termina al reemplazar la tabla antigua.
+  /// Resumen:
+  /// - Migra tareas al esquema v2 y convierte importancia a valores numéricos.
   Future<void> _actualizarTablaTareasV2(Database db) async {
     await _crearTablaTareas(db, 'tareas_v2');
 
@@ -160,6 +203,12 @@ class TareasRepository {
     await db.execute('ALTER TABLE tareas_v2 RENAME TO tareas');
   }
 
+  /// Input:
+  /// - `db` (`Database`): conexión donde se creará la tabla.
+  /// Output:
+  /// - `Future<void>`: termina al ejecutar la creación.
+  /// Resumen:
+  /// - Crea la tabla que almacena asignaturas y sus colores.
   Future<void> _crearTablaAsignaturas(Database db) async {
     await db.execute('''
       CREATE TABLE asignaturas (
@@ -170,6 +219,12 @@ class TareasRepository {
     ''');
   }
 
+  /// Input:
+  /// - `db` (`Database`): conexión donde se insertarán los registros.
+  /// Output:
+  /// - `Future<void>`: termina al insertar las asignaturas iniciales.
+  /// Resumen:
+  /// - Carga las asignaturas predeterminadas de una instalación nueva.
   Future<void> _insertarAsignaturasPorDefecto(Database db) async {
     await db.insert('asignaturas', {
       'nombre': 'Matemáticas',
@@ -182,6 +237,12 @@ class TareasRepository {
     await db.insert('asignaturas', {'nombre': 'Física', 'color': 0xFFFF9800});
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta las tareas almacenadas.
+  /// Output:
+  /// - `Future<List<Tarea>>`: tareas ordenadas por fecha límite e identificador.
+  /// Resumen:
+  /// - Lee y convierte todas las filas de tareas a modelos.
   Future<List<Tarea>> listar() async {
     Database db = await database;
     List<Map<String, dynamic>> filas = await db.query(
@@ -198,6 +259,12 @@ class TareasRepository {
     return listaTareas;
   }
 
+  /// Input:
+  /// - `id` (`int`): identificador de la tarea que se buscará.
+  /// Output:
+  /// - `Future<Tarea?>`: tarea encontrada o `null` si no existe.
+  /// Resumen:
+  /// - Consulta una tarea por su identificador.
   Future<Tarea?> obtener(int id) async {
     Database db = await database;
     List<Map<String, dynamic>> filas = await db.query(
@@ -213,6 +280,12 @@ class TareasRepository {
     }
   }
 
+  /// Input:
+  /// - `tarea` (`Tarea`): datos validados que se insertarán o actualizarán.
+  /// Output:
+  /// - `Future<Tarea>`: tarea guardada, con el ID generado si era nueva.
+  /// Resumen:
+  /// - Valida campos obligatorios y persiste la tarea en la base de datos.
   Future<Tarea> guardar(Tarea tarea) async {
     if (tarea.titulo.trim().isEmpty) {
       throw ArgumentError('Debes rellenar el título.');
@@ -252,11 +325,23 @@ class TareasRepository {
     }
   }
 
+  /// Input:
+  /// - `id` (`int`): identificador de la tarea que se eliminará.
+  /// Output:
+  /// - `Future<void>`: termina al ejecutar la eliminación.
+  /// Resumen:
+  /// - Borra de la base de datos la tarea indicada.
   Future<void> eliminar(int id) async {
     Database db = await database;
     await db.delete('tareas', where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta la preferencia de sincronización.
+  /// Output:
+  /// - `Future<bool>`: `true` si Calendar está habilitado.
+  /// Resumen:
+  /// - Lee el estado de sincronización guardado en preferencias.
   Future<bool> sincronizacionCalendarHabilitada() async {
     final db = await database;
     final filas = await db.query(
@@ -269,6 +354,12 @@ class TareasRepository {
     return filas.isNotEmpty && filas.first['valor'] == 'true';
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta la cuenta guardada en preferencias.
+  /// Output:
+  /// - `Future<String?>`: correo vinculado o `null` si no hay uno guardado.
+  /// Resumen:
+  /// - Recupera el correo asociado a Google Calendar.
   Future<String?> correoCalendarVinculado() async {
     final db = await database;
     final filas = await db.query(
@@ -281,6 +372,13 @@ class TareasRepository {
     return filas.isEmpty ? null : filas.first['valor'] as String;
   }
 
+  /// Input:
+  /// - `habilitada` (`bool`): nuevo estado de sincronización.
+  /// - `correo` (`String?`): correo opcional de la cuenta vinculada.
+  /// Output:
+  /// - `Future<void>`: termina al guardar las preferencias en una transacción.
+  /// Resumen:
+  /// - Persiste la activación de Calendar y, si se indicó, su cuenta.
   Future<void> guardarEstadoSincronizacionCalendar({
     required bool habilitada,
     String? correo,
@@ -300,6 +398,12 @@ class TareasRepository {
     });
   }
 
+  /// Input:
+  /// - `tareaId` (`int`): identificador local de la tarea.
+  /// Output:
+  /// - `Future<String?>`: ID del evento de Calendar o `null` si no existe.
+  /// Resumen:
+  /// - Consulta el ID remoto vinculado a la tarea.
   Future<String?> idEventoCalendar(int tareaId) async {
     final db = await database;
     final filas = await db.query(
@@ -313,6 +417,13 @@ class TareasRepository {
     return filas.first['google_event_id'] as String?;
   }
 
+  /// Input:
+  /// - `tareaId` (`int`): identificador local de la tarea.
+  /// - `eventoId` (`String?`): ID remoto que se asociará o eliminará.
+  /// Output:
+  /// - `Future<void>`: termina al actualizar la fila de la tarea.
+  /// Resumen:
+  /// - Guarda o limpia la relación entre tarea y evento de Calendar.
   Future<void> guardarIdEventoCalendar(int tareaId, String? eventoId) async {
     final db = await database;
     await db.update(
@@ -323,6 +434,12 @@ class TareasRepository {
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta las asignaturas almacenadas.
+  /// Output:
+  /// - `Future<List<Asignatura>>`: asignaturas ordenadas por nombre.
+  /// Resumen:
+  /// - Lee y convierte las filas de asignaturas a modelos.
   Future<List<Asignatura>> listarAsignaturas() async {
     Database db = await database;
     List<Map<String, dynamic>> filas = await db.query(
@@ -337,6 +454,12 @@ class TareasRepository {
     return listaAsignaturas;
   }
 
+  /// Input:
+  /// - `asignatura` (`Asignatura`): nombre, color y posible ID a guardar.
+  /// Output:
+  /// - `Future<Asignatura>`: asignatura guardada, con ID si fue nueva.
+  /// Resumen:
+  /// - Valida el nombre y crea o actualiza la asignatura.
   Future<Asignatura> guardarAsignatura(Asignatura asignatura) async {
     if (asignatura.nombre.trim().isEmpty) {
       throw ArgumentError('Debes rellenar el nombre.');
@@ -358,11 +481,25 @@ class TareasRepository {
     }
   }
 
+  /// Input:
+  /// - `id` (`int`): identificador de la asignatura que se eliminará.
+  /// Output:
+  /// - `Future<void>`: termina al ejecutar la eliminación.
+  /// Resumen:
+  /// - Borra de la base de datos la asignatura indicada.
   Future<void> eliminarAsignatura(int id) async {
     Database db = await database;
     await db.delete('asignaturas', where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Input:
+  /// - `asignatura` (`String`): asignatura a la que se atribuye el tiempo.
+  /// - `segundos` (`int`): cantidad positiva de segundos de estudio.
+  /// - `fecha` (`DateTime?`): fecha opcional de la sesión; por defecto, ahora.
+  /// Output:
+  /// - `Future<void>`: termina al registrar la sesión y actualizar el total.
+  /// Resumen:
+  /// - Guarda la sesión y suma sus segundos al acumulado de la asignatura.
   Future<void> registrarTiempoEstudio({
     required String asignatura,
     required int segundos,
@@ -395,6 +532,12 @@ class TareasRepository {
     });
   }
 
+  /// Input:
+  /// - `asignatura` (`String`): nombre de la asignatura que se consultará.
+  /// Output:
+  /// - `Future<int>`: segundos acumulados, o cero si aún no hay registro.
+  /// Resumen:
+  /// - Consulta el tiempo total de estudio de una asignatura.
   Future<int> obtenerTiempoEstudio(String asignatura) async {
     final db = await database;
     final filas = await db.query(
@@ -407,6 +550,13 @@ class TareasRepository {
     return filas.isEmpty ? 0 : filas.first['segundos'] as int;
   }
 
+  /// Input:
+  /// - `asignatura` (`String`): asignatura para la meta semanal.
+  /// - `segundos` (`int`): duración objetivo, hasta 168 horas.
+  /// Output:
+  /// - `Future<void>`: termina al insertar o reemplazar la meta.
+  /// Resumen:
+  /// - Valida y guarda la meta semanal de la asignatura.
   Future<void> guardarMetaSemanal({
     required String asignatura,
     required int segundos,
@@ -429,6 +579,12 @@ class TareasRepository {
     );
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta todas las metas guardadas.
+  /// Output:
+  /// - `Future<Map<String, int>>`: segundos objetivo indexados por asignatura.
+  /// Resumen:
+  /// - Devuelve el conjunto de metas semanales almacenadas.
   Future<Map<String, int>> listarMetasSemanales() async {
     final db = await database;
     final filas = await db.query('metas_semanales');
@@ -438,6 +594,12 @@ class TareasRepository {
     };
   }
 
+  /// Input:
+  /// - `fecha` (`DateTime?`): fecha opcional para determinar la semana.
+  /// Output:
+  /// - `Future<Map<String, int>>`: segundos estudiados por asignatura esa semana.
+  /// Resumen:
+  /// - Suma las sesiones desde el lunes hasta el inicio de la semana siguiente.
   Future<Map<String, int>> obtenerTiempoEstudioSemanal({
     DateTime? fecha,
   }) async {
@@ -467,6 +629,12 @@ class TareasRepository {
     };
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa la conexión abierta por este repositorio.
+  /// Output:
+  /// - `Future<void>`: termina cuando la conexión queda cerrada.
+  /// Resumen:
+  /// - Cierra la base de datos si fue abierta y permite abrirla nuevamente.
   Future<void> cerrar() async {
     final apertura = _abriendo;
     if (apertura == null) return;

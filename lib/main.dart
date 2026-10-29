@@ -30,6 +30,12 @@ class MainApp extends StatelessWidget{
 
   final TareasRepository? repositorio;
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto donde se configura la app.
+  /// Output:
+  /// - `Widget`: árbol raíz de la aplicación.
+  /// Resumen:
+  /// - Configura tema, navegación, autenticación e inicio de la app.
   @override
   Widget build(BuildContext context){
     return MaterialApp(

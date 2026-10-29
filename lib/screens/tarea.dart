@@ -34,6 +34,12 @@ class _TareaScreenState extends State<TareaScreen> {
     _colorAsignatura = _buscarColorAsignatura(_tarea.asignatura);
   }
 
+  /// Input:
+  /// - `nombre` (`String`): nombre de la asignatura asociada a la tarea.
+  /// Output:
+  /// - `Future<Color?>`: color encontrado o `null` si no existe la asignatura.
+  /// Resumen:
+  /// - Busca el color de la asignatura en el repositorio.
   Future<Color?> _buscarColorAsignatura(String nombre) async{
     final asignaturas = await widget.repositorio.listarAsignaturas();
     for (final asignatura in asignaturas){
@@ -42,12 +48,24 @@ class _TareaScreenState extends State<TareaScreen> {
     return null;
   }
 
+  /// Input:
+  /// - `mensaje` (`String`): texto que se mostrará al usuario.
+  /// Output:
+  /// - `void`: muestra un aviso en la pantalla.
+  /// Resumen:
+  /// - Presenta el error en una notificación temporal.
   void _mostrarError(String mensaje){
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa la tarea actual y el repositorio.
+  /// Output:
+  /// - `Future<void>`: termina cuando se cierra el formulario de edición.
+  /// Resumen:
+  /// - Abre el formulario y actualiza la tarea si se guardan cambios.
   Future<void> _editar() async{
     final editada = await Navigator.of(context).push<Tarea>(
       MaterialPageRoute(
@@ -63,6 +81,12 @@ class _TareaScreenState extends State<TareaScreen> {
     }
   }
 
+  /// Input:
+  /// - `actualizada` (`Tarea`): datos de la tarea que se guardarán.
+  /// Output:
+  /// - `Future<void>`: termina tras guardar y sincronizar, o mostrar un error.
+  /// Resumen:
+  /// - Persiste la tarea y sincroniza su evento de Calendar si está habilitado.
   Future<void> _guardarCambio(Tarea actualizada) async{
     if (_guardando) return;
     setState(() => _guardando = true);
@@ -90,6 +114,12 @@ class _TareaScreenState extends State<TareaScreen> {
     }
   }
 
+  /// Input:
+  /// - `valor` (`int`): nueva importancia de la tarea.
+  /// Output:
+  /// - `Future<void>`: termina después del guardado y actualización visual.
+  /// Resumen:
+  /// - Guarda la importancia elegida y limpia el valor temporal del control.
   Future<void> _cambiarImportancia(int valor) async{
     if (valor != _tarea.importancia){
       await _guardarCambio(_tarea.copyWith(importancia: valor));
@@ -98,6 +128,12 @@ class _TareaScreenState extends State<TareaScreen> {
     if (mounted) setState(() => _importanciaTemporal = null);
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa la tarea y el repositorio de esta pantalla.
+  /// Output:
+  /// - `Future<void>`: termina al cancelar o completar la eliminación.
+  /// Resumen:
+  /// - Confirma, elimina el evento de Calendar si corresponde y borra la tarea.
   Future<void> _eliminar() async{
     final confirmado = await showDialog<bool>(
       context: context,
@@ -140,6 +176,12 @@ class _TareaScreenState extends State<TareaScreen> {
     }
   }
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para tema y árbol de widgets.
+  /// Output:
+  /// - `Widget`: devuelve la pantalla tematizada con los detalles de la tarea.
+  /// Resumen:
+  /// - Define los colores de la pantalla y delega la construcción del detalle.
   @override
   Widget build(BuildContext context){
     final colores = ColorScheme.fromSeed(
@@ -155,6 +197,12 @@ class _TareaScreenState extends State<TareaScreen> {
     );
   }
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto con el tema y estado actual.
+  /// Output:
+  /// - `Widget`: devuelve el contenido de detalle y acciones de la tarea.
+  /// Resumen:
+  /// - Construye la información editable y el resumen de la tarea.
   Widget _construirDetalle(BuildContext context){
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
@@ -382,6 +430,12 @@ class _DatoTarea extends StatelessWidget {
   final String etiqueta;
   final String valor;
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para tema y árbol de widgets.
+  /// Output:
+  /// - `Widget`: devuelve la fila con el icono, etiqueta y valor del dato.
+  /// Resumen:
+  /// - Construye una fila accesible de información del detalle de tarea.
   @override
   Widget build(BuildContext context){
     final tema = Theme.of(context);

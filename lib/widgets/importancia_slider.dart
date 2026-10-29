@@ -12,6 +12,12 @@ class ImportanciaSlider extends StatelessWidget {
   final ValueChanged<int>? onChanged;
   final ValueChanged<int>? onChangeEnd;
 
+  /// Input:
+  /// - `context` (`BuildContext`): contexto para el tema y controles.
+  /// Output:
+  /// - `Widget`: control deslizante de importancia con etiquetas.
+  /// Resumen:
+  /// - Permite seleccionar la importancia de una tarea entre 1 y 5.
   @override
   Widget build(BuildContext context){
     final tema = Theme.of(context);

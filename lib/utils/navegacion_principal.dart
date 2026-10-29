@@ -4,6 +4,13 @@ const rutaInicio = '/inicio';
 const rutaMatriz = '/matriz';
 const rutaPomodoro = '/pomodoro';
 
+/// Input:
+/// - `context` (`BuildContext`): contexto desde el que se navega.
+/// - `builder` (`WidgetBuilder`): constructor de la pantalla de Inicio.
+/// Output:
+/// - `Future<void>`: termina cuando se retira la ruta abierta.
+/// Resumen:
+/// - Añade Inicio a la pila sin reemplazar las pantallas anteriores.
 Future<void> abrirInicioConservandoPila(
   BuildContext context, {
   required WidgetBuilder builder,
@@ -16,6 +23,14 @@ Future<void> abrirInicioConservandoPila(
   );
 }
 
+/// Input:
+/// - `context` (`BuildContext`): contexto desde el que se navega.
+/// - `ruta` (`String`): nombre de la ruta principal que se abrirá.
+/// - `builder` (`WidgetBuilder`): constructor si la ruta no está en la pila.
+/// Output:
+/// - `Future<void>`: termina cuando se completa la navegación.
+/// Resumen:
+/// - Vuelve a una ruta existente o la agrega si todavía no está en la pila.
 Future<void> navegarAPantallaPrincipal(
   BuildContext context, {
   required String ruta,

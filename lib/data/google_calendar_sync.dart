@@ -12,6 +12,12 @@ class GoogleCalendarSyncException implements Exception {
 
   final String message;
 
+  /// Input:
+  /// - No recibe parámetros; usa el mensaje de esta excepción.
+  /// Output:
+  /// - `String`: descripción legible del error.
+  /// Resumen:
+  /// - Expone el mensaje de la excepción como su representación textual.
   @override
   String toString() => message;
 }
@@ -28,6 +34,12 @@ class GoogleCalendarSync {
   final TareasRepository repositorio;
   final GoogleSignIn _google = GoogleSignIn.instance;
 
+  /// Input:
+  /// - No recibe parámetros; usa el repositorio y la cuenta de Google elegida.
+  /// Output:
+  /// - `Future<bool>`: `true` si completó la sincronización o `false` si se canceló.
+  /// Resumen:
+  /// - Autoriza Calendar, sincroniza tareas existentes y guarda la preferencia.
   Future<bool> habilitarYSincronizar() async{
     await Auth().inicializarGoogle();
     if (!_google.supportsAuthenticate()){
@@ -67,10 +79,22 @@ class GoogleCalendarSync {
     return true;
   }
 
+  /// Input:
+  /// - No recibe parámetros; usa el repositorio asociado a este sincronizador.
+  /// Output:
+  /// - `Future<void>`: termina al guardar la preferencia desactivada.
+  /// Resumen:
+  /// - Desactiva la sincronización sin borrar los eventos ya creados.
   Future<void> deshabilitar() async{
     await repositorio.guardarEstadoSincronizacionCalendar(habilitada: false);
   }
 
+  /// Input:
+  /// - `tarea` (`Tarea`): tarea que se creará o actualizará en Calendar.
+  /// Output:
+  /// - `Future<void>`: termina al sincronizar o si la sincronización está apagada.
+  /// Resumen:
+  /// - Valida la cuenta y permisos, y sincroniza una tarea si está habilitado.
   Future<void> sincronizarTareaSiHabilitada(Tarea tarea) async{
     if (!await repositorio.sincronizacionCalendarHabilitada()) return;
     final cuenta = await _obtenerCuentaAutorizada();
@@ -89,6 +113,12 @@ class GoogleCalendarSync {
     await _sincronizarTarea(tarea, autorizacion.accessToken);
   }
 
+  /// Input:
+  /// - `tareaId` (`int`): identificador local de la tarea a eliminar.
+  /// Output:
+  /// - `Future<void>`: termina al eliminar el evento o si no aplica.
+  /// Resumen:
+  /// - Elimina de Calendar el evento asociado cuando la sincronización está activa.
   Future<void> eliminarEventoSiHabilitado(int tareaId) async{
     if (!await repositorio.sincronizacionCalendarHabilitada()) return;
     final eventoId = await repositorio.idEventoCalendar(tareaId);
@@ -119,6 +149,12 @@ class GoogleCalendarSync {
     }
   }
 
+  /// Input:
+  /// - No recibe parámetros; consulta la cuenta vinculada o autenticación ligera.
+  /// Output:
+  /// - `Future<GoogleSignInAccount>`: cuenta Google autorizada para Calendar.
+  /// Resumen:
+  /// - Recupera la cuenta autorizada o solicita volver a vincularla.
   Future<GoogleSignInAccount> _obtenerCuentaAutorizada() async{
     await Auth().inicializarGoogle();
     final cuentaEnMemoria = _cuentaAutorizada;
@@ -144,6 +180,12 @@ class GoogleCalendarSync {
     return cuenta;
   }
 
+  /// Input:
+  /// - `cuenta` (`GoogleSignInAccount`): cuenta para consultar permisos actuales.
+  /// Output:
+  /// - `Future<GoogleSignInClientAuthorization?>`: autorización existente o `null`.
+  /// Resumen:
+  /// - Consulta los permisos Calendar ya concedidos sin iniciar otro consentimiento.
   Future<GoogleSignInClientAuthorization?> _autorizacionExistente(
     GoogleSignInAccount cuenta,
   ) async{
@@ -156,6 +198,13 @@ class GoogleCalendarSync {
     }
   }
 
+  /// Input:
+  /// - `tarea` (`Tarea`): tarea que se reflejará en Calendar.
+  /// - `accessToken` (`String`): token de acceso para la API de Calendar.
+  /// Output:
+  /// - `Future<void>`: termina al crear o actualizar el evento localmente vinculado.
+  /// Resumen:
+  /// - Actualiza el evento existente o crea uno nuevo y guarda su identificador.
   Future<void> _sincronizarTarea(Tarea tarea, String accessToken) async{
     final tareaId = tarea.id;
     if (tareaId == null){
@@ -213,6 +262,12 @@ class GoogleCalendarSync {
     await repositorio.guardarIdEventoCalendar(tareaId, nuevoEventoId);
   }
 
+  /// Input:
+  /// - `solicitud` (`Future<http.Response> Function()`): llamada HTTP a ejecutar.
+  /// Output:
+  /// - `Future<http.Response>`: respuesta del servidor o excepción traducida.
+  /// Resumen:
+  /// - Ejecuta una llamada y convierte errores de conexión en errores de dominio.
   Future<http.Response> _enviar(Future<http.Response> Function() solicitud) async{
     try{
       return await solicitud();
@@ -223,17 +278,41 @@ class GoogleCalendarSync {
     }
   }
 
+  /// Input:
+  /// - `id` (`String`): identificador del evento en Google Calendar.
+  /// Output:
+  /// - `Uri`: dirección de la API para ese evento.
+  /// Resumen:
+  /// - Construye la URL del evento en el calendario principal.
   Uri _uriEvento(String id) =>
       Uri.https('www.googleapis.com', '/calendar/v3/calendars/primary/events/$id');
 
+  /// Input:
+  /// - No recibe parámetros; utiliza el calendario principal de la cuenta.
+  /// Output:
+  /// - `Uri`: URL de la colección de eventos de Calendar.
+  /// Resumen:
+  /// - Construye la URL base para crear eventos.
   Uri get _uriEventos =>
       Uri.https('www.googleapis.com', '/calendar/v3/calendars/primary/events');
 
+  /// Input:
+  /// - `token` (`String`): token de acceso para autorizar la API.
+  /// Output:
+  /// - `Map<String, String>`: encabezados HTTP de autenticación y JSON.
+  /// Resumen:
+  /// - Prepara los encabezados comunes de las solicitudes a Calendar.
   Map<String, String> _headers(String token) => {
     'Authorization': 'Bearer $token',
     'Content-Type': 'application/json',
   };
 
+  /// Input:
+  /// - `statusCode` (`int`): código HTTP de error de Google Calendar.
+  /// Output:
+  /// - `GoogleCalendarSyncException`: error con mensaje apropiado para el usuario.
+  /// Resumen:
+  /// - Traduce respuestas HTTP fallidas a errores de sincronización.
   GoogleCalendarSyncException _errorApi(int statusCode){
     if (statusCode == 401 || statusCode == 403){
       return const GoogleCalendarSyncException(
