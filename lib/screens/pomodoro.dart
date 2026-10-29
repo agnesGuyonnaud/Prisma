@@ -87,6 +87,14 @@ class _PomodoroScreenState extends State<PomodoroScreen>
         }),
       );
     }
+    unawaited(
+      _notificaciones.cancelar().catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        debugPrint('No se pudieron cancelar los avisos Pomodoro: $error');
+      }),
+    );
     super.dispose();
   }
 
@@ -107,7 +115,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
         _sincronizarTemporizador()
             .then((_) {
               if (_enMarcha) {
-                return _programarAvisos().catchError(_notificarErrorAvisos);
+                return _programarAvisos().catchError(_registrarErrorAvisos);
               }
             })
             .catchError(_notificarErrorGuardado),
@@ -158,10 +166,11 @@ class _PomodoroScreenState extends State<PomodoroScreen>
 
   Future<void> _abrirMatriz() async {
     if (!mounted) return;
-    await navegarAPantallaPrincipal(
-      context,
-      ruta: rutaMatriz,
-      builder: (_) => MatrizScreen(repositorio: _repositorio),
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: rutaMatriz),
+        builder: (_) => MatrizScreen(repositorio: _repositorio),
+      ),
     );
   }
 
@@ -182,7 +191,11 @@ class _PomodoroScreenState extends State<PomodoroScreen>
         _finDeFase = null;
         _ultimoAvance = null;
       });
-      await _notificaciones.cancelar();
+      try {
+        await _notificaciones.cancelar();
+      } catch (error) {
+        _notificarErrorCancelarAvisos(error);
+      }
       try {
         await _guardarTiempoPendiente();
       } catch (error) {
@@ -223,14 +236,15 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     });
     _iniciarReloj();
     if (permisosAvisos) {
-      try {
-        await _programarAvisos();
-      } catch (error) {
-        _notificarErrorAvisos(error);
-      }
       if (_notificaciones is NotificacionesLocalesPomodoro &&
           !_notificaciones.permiteAlarmasExactas) {
         _mostrarAvisoAlarmasInexactas();
+      } else {
+        try {
+          await _programarAvisos();
+        } catch (error) {
+          _registrarErrorAvisos(error);
+        }
       }
     } else if (_notificaciones is NotificacionesLocalesPomodoro) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -249,7 +263,8 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       ..showSnackBar(
         SnackBar(
           content: const Text(
-            'Android no habilitó las alarmas exactas. Con la pantalla apagada, los avisos pueden llegar tarde.',
+            'Activa las alarmas exactas para recibir avisos a tiempo. '
+            'Sin ese permiso no se programarán avisos.',
           ),
           duration: const Duration(seconds: 10),
           action: SnackBarAction(
@@ -265,7 +280,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
                   _mostrarAvisoAlarmasInexactas();
                 }
               } catch (error) {
-                _notificarErrorAvisos(error);
+                _registrarErrorAvisos(error);
               }
             },
           ),
@@ -313,7 +328,6 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     final ahora = _ahora;
     var cursor = _ultimoAvance ?? ahora;
     var finDeFase = finInicial;
-    var huboTransicion = false;
     while (!ahora.isBefore(finDeFase)) {
       if (_fase == _FasePomodoro.estudio) {
         _acumularTiempoEstudio(finDeFase.difference(cursor));
@@ -324,7 +338,6 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       }
       cursor = finDeFase;
       finDeFase = finDeFase.add(_duracionDe(_fase));
-      huboTransicion = true;
     }
     if (ahora.isAfter(cursor) && _fase == _FasePomodoro.estudio) {
       _acumularTiempoEstudio(ahora.difference(cursor));
@@ -337,13 +350,6 @@ class _PomodoroScreenState extends State<PomodoroScreen>
 
     if (_segundosPendientes >= _segundosAntesDeGuardar || guardarTodo) {
       await _guardarTiempoPendiente();
-    }
-    if (huboTransicion && _enMarcha) {
-      try {
-        await _programarAvisos();
-      } catch (error) {
-        _notificarErrorAvisos(error);
-      }
     }
   }
 
@@ -384,16 +390,23 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     await _notificaciones.programar(avisos);
   }
 
-  void _notificarErrorAvisos(Object error) {
+  void _registrarErrorAvisos(Object error) {
     debugPrint('No se pudieron programar los avisos Pomodoro: $error');
+  }
+
+  void _notificarErrorCancelarAvisos(Object error) {
+    debugPrint('No se pudieron cancelar los avisos Pomodoro: $error');
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'El temporizador sigue funcionando, pero no se pudo programar el aviso con sonido.',
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se pudieron cancelar los avisos Pomodoro. '
+            'Revisa los permisos de notificaciones.',
+          ),
         ),
-      ),
-    );
+      );
   }
 
   Future<void> _reiniciar() async {
@@ -404,7 +417,11 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       _finDeFase = null;
       _ultimoAvance = null;
     });
-    await _notificaciones.cancelar();
+    try {
+      await _notificaciones.cancelar();
+    } catch (error) {
+      _notificarErrorCancelarAvisos(error);
+    }
     try {
       await _guardarTiempoPendiente();
     } catch (error) {

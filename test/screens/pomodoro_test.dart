@@ -37,6 +37,7 @@ void main() {
     expect(repositorio.segundosEstudio['Física'], 220);
     expect(find.text('Tiempo de estudio pendiente de guardar'), findsNothing);
     expect(notificaciones.avisos, isEmpty);
+    expect(notificaciones.programaciones, 1);
 
     await tester.tap(find.byTooltip('Reiniciar Pomodoro'));
     await tester.pump(const Duration(milliseconds: 500));
@@ -70,12 +71,14 @@ void main() {
     await tester.tap(find.byIcon(Icons.play_arrow));
     await tester.pump();
 
+    ahora = ahora.add(const Duration(seconds: 30));
+    await tester.pump(const Duration(seconds: 30));
     await tester.tap(find.text('Matriz'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Pomodoro'));
     await tester.pumpAndSettle();
 
-    expect(find.text('25:00'), findsOneWidget);
+    expect(find.text('24:30'), findsOneWidget);
     expect(find.byType(PomodoroScreen), findsOneWidget);
   });
 
@@ -112,11 +115,13 @@ void main() {
     expect(find.text('03:00'), findsOneWidget);
     expect(repositorio.segundosEstudio['Física'], 25 * 60);
     expect(notificaciones.avisos, hasLength(60));
+    expect(notificaciones.programaciones, 2);
   });
 }
 
 class _NotificacionesFalsas implements PomodoroNotificaciones {
   List<PomodoroAviso> avisos = [];
+  int programaciones = 0;
 
   @override
   bool get permiteAlarmasExactas => true;
@@ -129,6 +134,7 @@ class _NotificacionesFalsas implements PomodoroNotificaciones {
 
   @override
   Future<void> programar(List<PomodoroAviso> avisos) async {
+    programaciones++;
     this.avisos = avisos;
   }
 

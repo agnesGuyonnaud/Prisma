@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/auth.dart';
+import '../widgets/app_text_scaling.dart';
 
 class LoginScreen extends StatefulWidget{
   const LoginScreen({super.key, this.auth});
@@ -102,7 +103,11 @@ class _LoginScreenState extends State<LoginScreen>{
   @override
   Widget build(BuildContext context){
     final tema = Theme.of(context);
-    return Scaffold(
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaler: AppTextScaleScope.systemTextScalerOf(context),
+      ),
+      child: Scaffold(
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -258,6 +263,7 @@ class _LoginScreenState extends State<LoginScreen>{
             ),
           ),
         ),
+      ),
       ),
     );
   }

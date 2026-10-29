@@ -39,6 +39,7 @@ class NotificacionesLocalesPomodoro implements PomodoroNotificaciones {
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+  Future<void> _operacionEnCola = Future<void>.value();
   bool _inicializado = false;
   bool _permisoAlarmasExactas = false;
 
@@ -47,27 +48,18 @@ class NotificacionesLocalesPomodoro implements PomodoroNotificaciones {
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS);
 
+  bool get _plataformaAndroid =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
   @override
-  bool get permiteAlarmasExactas => _permisoAlarmasExactas;
+  bool get permiteAlarmasExactas =>
+      !_plataformaAndroid || _permisoAlarmasExactas;
 
   @override
   Future<bool> preparar() async {
     if (!_plataformaMovil) return false;
 
-    if (!_inicializado) {
-      timezone_data.initializeTimeZones();
-      await _plugin.initialize(
-        settings: const InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-          iOS: DarwinInitializationSettings(
-            requestAlertPermission: false,
-            requestBadgePermission: false,
-            requestSoundPermission: false,
-          ),
-        ),
-      );
-      _inicializado = true;
-    }
+    await _inicializar();
 
     if (defaultTargetPlatform == TargetPlatform.android) {
       final android = _plugin
@@ -110,52 +102,100 @@ class NotificacionesLocalesPomodoro implements PomodoroNotificaciones {
   }
 
   @override
-  Future<void> programar(List<PomodoroAviso> avisos) async {
-    if (!_plataformaMovil) return;
-    await cancelar();
-    for (var index = 0; index < avisos.length; index++) {
-      final aviso = avisos[index];
-      await _plugin.zonedSchedule(
-        id: _idBase + index,
-        title: aviso.titulo,
-        body: aviso.mensaje,
-        scheduledDate: timezone.TZDateTime.from(
-          aviso.fecha.toUtc(),
-          timezone.UTC,
-        ),
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            _canalId,
-            _canalNombre,
-            channelDescription: 'Avisos al terminar cada fase Pomodoro.',
-            importance: Importance.max,
-            priority: Priority.high,
-            playSound: true,
-          ),
-          iOS: DarwinNotificationDetails(
-            presentAlert: true,
-            presentSound: true,
-          ),
-        ),
-        androidScheduleMode: _permisoAlarmasExactas
-            ? AndroidScheduleMode.exactAllowWhileIdle
-            : AndroidScheduleMode.inexactAllowWhileIdle,
-      );
-    }
-    final programados = await _plugin.pendingNotificationRequests();
-    if (programados.length < avisos.length) {
-      throw StateError(
-        'Android solo confirmó ${programados.length} de '
-        '${avisos.length} avisos Pomodoro.',
-      );
-    }
+  Future<void> programar(List<PomodoroAviso> avisos) {
+    return _encolar(() async {
+      if (!_plataformaMovil) return;
+      await _cancelarInterno();
+      if (_plataformaAndroid && !_permisoAlarmasExactas) {
+        throw StateError(
+          'Android no concedió el permiso para programar alarmas exactas.',
+        );
+      }
+
+      try {
+        for (var index = 0; index < avisos.length; index++) {
+          final aviso = avisos[index];
+          await _plugin.zonedSchedule(
+            id: _idBase + index,
+            title: aviso.titulo,
+            body: aviso.mensaje,
+            scheduledDate: timezone.TZDateTime.from(
+              aviso.fecha.toUtc(),
+              timezone.UTC,
+            ),
+            notificationDetails: const NotificationDetails(
+              android: AndroidNotificationDetails(
+                _canalId,
+                _canalNombre,
+                channelDescription: 'Avisos al terminar cada fase Pomodoro.',
+                importance: Importance.max,
+                priority: Priority.high,
+                playSound: true,
+              ),
+              iOS: DarwinNotificationDetails(
+                presentAlert: true,
+                presentSound: true,
+              ),
+            ),
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          );
+        }
+        final programados = await _plugin.pendingNotificationRequests();
+        final idsProgramados = programados.map((aviso) => aviso.id).toSet();
+        final cantidadProgramada = avisos
+            .asMap()
+            .keys
+            .where((index) => idsProgramados.contains(_idBase + index))
+            .length;
+        if (cantidadProgramada < avisos.length) {
+          throw StateError(
+            'Android solo confirmó $cantidadProgramada de '
+            '${avisos.length} avisos Pomodoro.',
+          );
+        }
+      } catch (_) {
+        await _cancelarInterno();
+        rethrow;
+      }
+    });
   }
 
   @override
-  Future<void> cancelar() async {
-    if (!_plataformaMovil || !_inicializado) return;
-    for (var index = 0; index < _cantidadAvisos; index++) {
-      await _plugin.cancel(id: _idBase + index);
+  Future<void> cancelar() => _encolar(_cancelarInterno);
+
+  Future<void> _cancelarInterno() async {
+    if (!_plataformaMovil) return;
+    await _inicializar();
+    final pendientes = await _plugin.pendingNotificationRequests();
+    for (final aviso in pendientes) {
+      if (aviso.id >= _idBase && aviso.id < _idBase + _cantidadAvisos) {
+        await _plugin.cancel(id: aviso.id);
+      }
     }
+  }
+
+  Future<void> _inicializar() async {
+    if (_inicializado) return;
+    timezone_data.initializeTimeZones();
+    await _plugin.initialize(
+      settings: const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
+      ),
+    );
+    _inicializado = true;
+  }
+
+  Future<void> _encolar(Future<void> Function() operacion) {
+    final resultado = _operacionEnCola.then((_) => operacion());
+    _operacionEnCola = resultado.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return resultado;
   }
 }

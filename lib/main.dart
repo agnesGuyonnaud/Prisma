@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/auth.dart';
+import 'data/pomodoro_notifications.dart';
 import 'data/tareas_repository.dart';
 import 'screens/home.dart';
 import 'screens/login.dart';
+import 'widgets/app_text_scaling.dart';
 import 'widgets/tarea_list.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,6 +16,11 @@ import 'firebase_options.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await NotificacionesLocalesPomodoro.instancia.cancelar();
+  } catch (error) {
+    debugPrint('No se pudieron limpiar avisos Pomodoro anteriores: $error');
+  }
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MainApp());
 }
@@ -27,6 +34,21 @@ class MainApp extends StatelessWidget{
   Widget build(BuildContext context){
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return AppTextScaleScope(
+          systemTextScaler: mediaQuery.textScaler,
+          child: MediaQuery(
+            data: mediaQuery.copyWith(
+              textScaler: AppTextScaler(
+                mediaQuery.textScaler,
+                appTextScaleFactor,
+              ),
+            ),
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
 
       locale: const Locale('es'),
       supportedLocales: const [Locale('es')],
