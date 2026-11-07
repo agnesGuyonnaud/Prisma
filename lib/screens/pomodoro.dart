@@ -6,6 +6,8 @@ import '../data/pomodoro_notifications.dart';
 import '../data/tareas_repository.dart';
 import '../models/asignatura_model.dart';
 import 'asignaturas.dart';
+// Pantalla de tareas grupales.
+import 'grupos.dart';
 import 'home.dart';
 import 'matriz.dart';
 import 'perfil.dart';
@@ -200,6 +202,22 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       MaterialPageRoute<void>(
         settings: const RouteSettings(name: rutaMatriz),
         builder: (_) => MatrizScreen(repositorio: _repositorio),
+      ),
+    );
+  }
+
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina cuando se cierra la pantalla de Grupos.
+  /// Resumen:
+  /// - Abre Grupos encima de Pomodoro para conservar su estado.
+  Future<void> _abrirGrupos() async{
+    if(!mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: rutaGrupos),
+        builder: (_) => GruposScreen(repositorio: _repositorio),
       ),
     );
   }
@@ -991,6 +1009,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
             onDestinationSelected: (index) {
               if (index == 0) _abrirInicio();
               if (index == 1) _abrirMatriz();
+              if(index == 3) _abrirGrupos();
             },
             destinations: const [
               NavigationDestination(

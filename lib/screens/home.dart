@@ -4,6 +4,8 @@ import '../data/tareas_repository.dart';
 import '../models/meta_estudio_semanal.dart';
 import '../utils/navegacion_principal.dart';
 import '../widgets/tarea_list.dart';
+// Pantalla de tareas grupales.
+import 'grupos.dart';
 import 'matriz.dart';
 import 'perfil.dart';
 import 'pomodoro.dart';
@@ -143,6 +145,21 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       builder: (_) => PomodoroScreen(repositorio: _repositorio),
     );
     if (mounted) _recargarProgresosMetas();
+  }
+
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina cuando finaliza la navegación a Grupos.
+  /// Resumen:
+  /// - Navega a la pantalla de tareas grupales.
+  Future<void> _abrirGrupos() async{
+    if(!mounted) return;
+    await navegarAPantallaPrincipal(
+      context,
+      ruta: rutaGrupos,
+      builder: (_) => GruposScreen(repositorio: _repositorio),
+    );
   }
 
   /// Input:
@@ -482,6 +499,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             onDestinationSelected: (index) {
               if (index == 1) _abrirMatriz();
               if (index == 2) _abrirPomodoro();
+              if(index == 3) _abrirGrupos();
             },
             destinations: const [
               NavigationDestination(

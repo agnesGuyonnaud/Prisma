@@ -1,3 +1,6 @@
+// jsonEncode/jsonDecode para los eventos de Calendar de tareas grupales.
+import 'dart:convert';
+
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 
@@ -431,6 +434,62 @@ class TareasRepository {
       {'google_event_id': eventoId},
       where: 'id = ?',
       whereArgs: [tareaId],
+    );
+  }
+
+  /// Input:
+  /// - No recibe parámetros; consulta las preferencias.
+  /// Output:
+  /// - `Future<Map<String, Map<String, dynamic>>>`: evento y datos guardados
+  ///   por clave de tarea grupal.
+  /// Resumen:
+  /// - Lista los eventos de Calendar creados para tareas grupales.
+  Future<Map<String, Map<String, dynamic>>> eventosCalendarGrupales() async{
+    final db = await database;
+    final filas = await db.query(
+      'preferencias',
+      where: 'clave LIKE ?',
+      whereArgs: ['evento_grupal_%'],
+    );
+    return {
+      for(final fila in filas)
+        (fila['clave'] as String).substring('evento_grupal_'.length):
+            jsonDecode(fila['valor'] as String) as Map<String, dynamic>,
+    };
+  }
+
+  /// Input:
+  /// - `clave` (`String`): clave de la tarea grupal.
+  /// - `eventoId` (`String`): ID del evento en Calendar.
+  /// - `datos` (`String`): datos enviados, para detectar cambios.
+  /// Output:
+  /// - `Future<void>`: termina al guardar la preferencia.
+  /// Resumen:
+  /// - Guarda o reemplaza el evento asociado a una tarea grupal.
+  Future<void> guardarEventoCalendarGrupal(
+    String clave,
+    String eventoId,
+    String datos,
+  ) async{
+    final db = await database;
+    await db.insert('preferencias', {
+      'clave': 'evento_grupal_$clave',
+      'valor': jsonEncode({'evento': eventoId, 'datos': datos}),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// Input:
+  /// - `clave` (`String`): clave de la tarea grupal.
+  /// Output:
+  /// - `Future<void>`: termina al borrar la preferencia.
+  /// Resumen:
+  /// - Olvida el evento de una tarea grupal que ya no existe.
+  Future<void> eliminarEventoCalendarGrupal(String clave) async{
+    final db = await database;
+    await db.delete(
+      'preferencias',
+      where: 'clave = ?',
+      whereArgs: ['evento_grupal_$clave'],
     );
   }
 
