@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 
 import 'auth.dart';
 import 'tareas_repository.dart';
+// TareaGrupal para sincronizar las tareas de los grupos.
+import '../models/grupo_model.dart';
 import '../models/tarea_model.dart';
 
 class GoogleCalendarSyncException implements Exception {
@@ -97,20 +99,101 @@ class GoogleCalendarSync {
   /// - Valida la cuenta y permisos, y sincroniza una tarea si está habilitado.
   Future<void> sincronizarTareaSiHabilitada(Tarea tarea) async{
     if (!await repositorio.sincronizacionCalendarHabilitada()) return;
+    await _sincronizarTarea(tarea, await _tokenVigente());
+  }
+
+  static Future<void> _colaGrupales = Future.value();
+
+  /// Input:
+  /// - `tareas` (`List<TareaGrupal>`): todas las tareas grupales del usuario.
+  /// Output:
+  /// - `Future<void>`: termina cuando se procesa esta sincronización.
+  /// Resumen:
+  /// - Encola la sincronización para que dos llamadas seguidas no creen
+  ///   eventos duplicados.
+  Future<void> sincronizarTareasGrupalesSiHabilitada(List<TareaGrupal> tareas){
+    final siguiente = _colaGrupales
+        .catchError((_){})
+        .then((_) => _sincronizarTareasGrupales(tareas));
+    _colaGrupales = siguiente;
+    return siguiente;
+  }
+
+  /// Input:
+  /// - `tareas` (`List<TareaGrupal>`): todas las tareas grupales del usuario.
+  /// Output:
+  /// - `Future<void>`: termina al actualizar Calendar.
+  /// Resumen:
+  /// - Crea o actualiza solo los eventos que cambiaron y borra los de
+  ///   tareas que ya no existen.
+  Future<void> _sincronizarTareasGrupales(List<TareaGrupal> tareas) async{
+    if(!await repositorio.sincronizacionCalendarHabilitada()) return;
+    final guardados = await repositorio.eventosCalendarGrupales();
+    String? token;
+    for(final tarea in tareas){
+      final datosEvento = _datosEventoGrupal(tarea);
+      final guardado = guardados.remove(tarea.clave);
+      if(guardado != null && guardado['datos'] == datosEvento) continue;
+      token ??= await _tokenVigente();
+      final eventoId = await _publicarEvento(
+        guardado?['evento'] as String?,
+        datosEvento,
+        token,
+      );
+      await repositorio.guardarEventoCalendarGrupal(
+        tarea.clave,
+        eventoId,
+        datosEvento,
+      );
+    }
+    for(final entrada in guardados.entries){
+      token ??= await _tokenVigente();
+      await _eliminarEvento(entrada.value['evento'] as String, token);
+      await repositorio.eliminarEventoCalendarGrupal(entrada.key);
+    }
+  }
+
+  /// Input:
+  /// - `tarea` (`TareaGrupal`): tarea que se convertirá en evento.
+  /// Output:
+  /// - `String`: JSON del evento para la API de Calendar.
+  /// Resumen:
+  /// - Arma el título, descripción y horario del evento grupal.
+  String _datosEventoGrupal(TareaGrupal tarea) => jsonEncode({
+    'summary': tarea.titulo,
+    'description':
+        'Tarea grupal\nAsignatura: ${tarea.asignatura}\n'
+        'Estado: ${tarea.estado.etiqueta}',
+    'start': {'dateTime': tarea.fechaLimite.toUtc().toIso8601String()},
+    'end': {
+      'dateTime': tarea.fechaLimite
+          .add(const Duration(hours: 1))
+          .toUtc()
+          .toIso8601String(),
+    },
+  });
+
+  /// Input:
+  /// - No recibe parámetros; usa la cuenta vinculada en preferencias.
+  /// Output:
+  /// - `Future<String>`: token de acceso para la API de Calendar.
+  /// Resumen:
+  /// - Verifica que la cuenta y los permisos sigan vigentes y entrega el token.
+  Future<String> _tokenVigente() async{
     final cuenta = await _obtenerCuentaAutorizada();
     final correoVinculado = await repositorio.correoCalendarVinculado();
-    if (correoVinculado != cuenta.email){
+    if(correoVinculado != cuenta.email){
       throw const GoogleCalendarSyncException(
         'La cuenta de Calendar cambió. Vuelve a vincularla desde tu perfil.',
       );
     }
     final autorizacion = await _autorizacionExistente(cuenta);
-    if (autorizacion == null){
+    if(autorizacion == null){
       throw const GoogleCalendarSyncException(
         'Vuelve a vincular Google Calendar desde tu perfil para sincronizar.',
       );
     }
-    await _sincronizarTarea(tarea, autorizacion.accessToken);
+    return autorizacion.accessToken;
   }
 
   /// Input:
@@ -123,28 +206,26 @@ class GoogleCalendarSync {
     if (!await repositorio.sincronizacionCalendarHabilitada()) return;
     final eventoId = await repositorio.idEventoCalendar(tareaId);
     if (eventoId == null) return;
+    await _eliminarEvento(eventoId, await _tokenVigente());
+  }
 
-    final cuenta = await _obtenerCuentaAutorizada();
-    final correoVinculado = await repositorio.correoCalendarVinculado();
-    if (correoVinculado != cuenta.email){
-      throw const GoogleCalendarSyncException(
-        'La cuenta de Calendar cambió. Vuelve a vincularla desde tu perfil.',
-      );
-    }
-    final autorizacion = await _autorizacionExistente(cuenta);
-    if (autorizacion == null){
-      throw const GoogleCalendarSyncException(
-        'Vuelve a vincular Google Calendar desde tu perfil para sincronizar.',
-      );
-    }
-
+  /// Input:
+  /// - `eventoId` (`String`): ID del evento en Calendar.
+  /// - `accessToken` (`String`): token de acceso para la API.
+  /// Output:
+  /// - `Future<void>`: termina al borrar el evento.
+  /// Resumen:
+  /// - Elimina el evento, ignorando si ya no existía.
+  Future<void> _eliminarEvento(String eventoId, String accessToken) async{
     final respuesta = await _enviar(
       () => _cliente.delete(
         _uriEvento(eventoId),
-        headers: _headers(autorizacion.accessToken),
+        headers: _headers(accessToken),
       ),
     );
-    if (respuesta.statusCode != 204 && respuesta.statusCode != 404){
+    if(respuesta.statusCode != 204 &&
+        respuesta.statusCode != 404 &&
+        respuesta.statusCode != 410){
       throw _errorApi(respuesta.statusCode);
     }
   }
@@ -228,6 +309,29 @@ class GoogleCalendarSync {
       },
     });
 
+    final nuevoEventoId = await _publicarEvento(
+      eventoId,
+      datosEvento,
+      accessToken,
+    );
+    if(nuevoEventoId != eventoId){
+      await repositorio.guardarIdEventoCalendar(tareaId, nuevoEventoId);
+    }
+  }
+
+  /// Input:
+  /// - `eventoId` (`String?`): ID del evento existente, si lo hay.
+  /// - `datosEvento` (`String`): JSON del evento.
+  /// - `accessToken` (`String`): token de acceso para la API.
+  /// Output:
+  /// - `Future<String>`: ID del evento actualizado o creado.
+  /// Resumen:
+  /// - Actualiza el evento existente o crea uno nuevo si no existe.
+  Future<String> _publicarEvento(
+    String? eventoId,
+    String datosEvento,
+    String accessToken,
+  ) async{
     if (eventoId != null){
       final respuesta = await _enviar(
         () => _cliente.patch(
@@ -236,8 +340,8 @@ class GoogleCalendarSync {
           body: datosEvento,
         ),
       );
-      if (respuesta.statusCode == 200) return;
-      if (respuesta.statusCode != 404){
+      if (respuesta.statusCode == 200) return eventoId;
+      if (respuesta.statusCode != 404 && respuesta.statusCode != 410){
         throw _errorApi(respuesta.statusCode);
       }
     }
@@ -259,7 +363,7 @@ class GoogleCalendarSync {
         'Google Calendar no devolvió el identificador del evento.',
       );
     }
-    await repositorio.guardarIdEventoCalendar(tareaId, nuevoEventoId);
+    return nuevoEventoId;
   }
 
   /// Input:

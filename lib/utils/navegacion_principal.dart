@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 const rutaInicio = '/inicio';
 const rutaMatriz = '/matriz';
 const rutaPomodoro = '/pomodoro';
+const rutaGrupos = '/grupos';
 
 /// Input:
 /// - `context` (`BuildContext`): contexto desde el que se navega.

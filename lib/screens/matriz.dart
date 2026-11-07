@@ -6,6 +6,8 @@ import '../models/tarea_model.dart';
 import '../utils/navegacion_principal.dart';
 import '../widgets/matriz_tareas.dart';
 import '../widgets/tarea_list.dart';
+// Pantalla de tareas grupales.
+import 'grupos.dart';
 import 'perfil.dart';
 import 'pomodoro.dart';
 import 'tarea_formulario.dart';
@@ -91,6 +93,21 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
       context,
       ruta: rutaPomodoro,
       builder: (_) => PomodoroScreen(repositorio: _repositorio),
+    );
+  }
+
+  /// Input:
+  /// - No recibe parámetros; usa el contexto y repositorio de la pantalla.
+  /// Output:
+  /// - `Future<void>`: termina cuando finaliza la navegación a Grupos.
+  /// Resumen:
+  /// - Navega a la pantalla de tareas grupales.
+  Future<void> _abrirGrupos() async{
+    if(!mounted) return;
+    await navegarAPantallaPrincipal(
+      context,
+      ruta: rutaGrupos,
+      builder: (_) => GruposScreen(repositorio: _repositorio),
     );
   }
 
@@ -219,6 +236,7 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
             onDestinationSelected: (index){
               if (index == 0) _abrirInicio();
               if (index == 2) _abrirPomodoro();
+              if(index == 3) _abrirGrupos();
             },
             destinations: const [
               NavigationDestination(

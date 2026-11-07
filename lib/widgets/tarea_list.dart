@@ -1,11 +1,24 @@
+// StreamSubscription para escuchar las tareas grupales.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+// Sincroniza las tareas grupales con Google Calendar.
+import '../data/google_calendar_sync.dart';
+// Tareas grupales en Firestore.
+import '../data/grupos_repository.dart';
 import '../data/tareas_repository.dart';
+// ResumenGrupos y TareaGrupal.
+import '../models/grupo_model.dart';
 import '../models/tarea_model.dart';
 import '../models/cadran.dart';
 import '../utils/fecha_tarea.dart';
+// Tarjeta de tarea grupal.
+import 'tarea_grupal_mini.dart';
 import 'tarea_mini.dart';
 import '../screens/tarea.dart';
+// Detalle de la tarea grupal.
+import '../screens/tarea_grupal.dart';
 
 final RouteObserver<ModalRoute<dynamic>> tareasRouteObserver =
     RouteObserver<ModalRoute<dynamic>>();
@@ -25,6 +38,9 @@ class _TareaListState extends State<TareaList> with RouteAware {
   ModalRoute<dynamic>? _ruta;
 
   late final TareasRepository _repositorio;
+  StreamSubscription<ResumenGrupos>? _suscripcionGrupos;
+  ResumenGrupos? _resumen;
+  Map<String, Color> _colores = {};
 
   @override
   void initState(){
@@ -32,6 +48,42 @@ class _TareaListState extends State<TareaList> with RouteAware {
 
     _repositorio = widget.repositorio ?? TareasRepository.instancia;
     _tareas = _repositorio.listar();
+    if(widget.cadran == null) _escucharGrupos();
+  }
+
+  /// Input:
+  /// - No recibe parámetros; usa el repositorio de grupos y el local.
+  /// Output:
+  /// - `void`: inicia la suscripción y la carga de colores.
+  /// Resumen:
+  /// - Escucha las tareas grupales para mostrarlas en Inicio y carga los
+  ///   colores de las asignaturas.
+  void _escucharGrupos(){
+    _suscripcionGrupos = GruposRepository.instancia.resumen().listen((resumen){
+      if(!mounted) return;
+      setState(() => _resumen = resumen);
+      _sincronizarCalendar(resumen);
+    }, onError: (_){});
+    _repositorio.listarAsignaturas().then((asignaturas){
+      if(!mounted) return;
+      setState(() => _colores = {for(final a in asignaturas) a.nombre: a.color});
+    });
+  }
+
+  /// Input:
+  /// - `resumen` (`ResumenGrupos`): tareas grupales actuales.
+  /// Output:
+  /// - `Future<void>`: termina al sincronizar o fallar.
+  /// Resumen:
+  /// - Sincroniza las tareas grupales con Calendar sin mostrar errores en Inicio.
+  Future<void> _sincronizarCalendar(ResumenGrupos resumen) async{
+    try{
+      await GoogleCalendarSync(
+        repositorio: _repositorio,
+      ).sincronizarTareasGrupalesSiHabilitada(resumen.tareas);
+    } on GoogleCalendarSyncException{
+      return;
+    }
   }
 
   @override
@@ -53,6 +105,7 @@ class _TareaListState extends State<TareaList> with RouteAware {
   @override
   void dispose(){
     tareasRouteObserver.unsubscribe(this);
+    _suscripcionGrupos?.cancel();
     super.dispose();
   }
 
@@ -115,7 +168,9 @@ class _TareaListState extends State<TareaList> with RouteAware {
         }
 
         final tareas = snapshot.data ?? [];
-        if (tareas.isEmpty){
+        final resumen = _resumen;
+        final grupales = resumen?.tareas ?? <TareaGrupal>[];
+        if (tareas.isEmpty && grupales.isEmpty){
           return const Align(
             alignment: Alignment.topCenter,
             child: Card.filled(
@@ -135,7 +190,7 @@ class _TareaListState extends State<TareaList> with RouteAware {
             ? _filterByCadran(tareas, widget.cadran!)
             : tareas;
 
-        if (tareasToDisplay.isEmpty){
+        if (tareasToDisplay.isEmpty && grupales.isEmpty){
           return Center(child: Text('No hay tareas en este cuadrante.'));
         }
 
@@ -147,8 +202,55 @@ class _TareaListState extends State<TareaList> with RouteAware {
           );
         return ListView.builder(
           padding: const EdgeInsets.only(bottom: 88),
-          itemCount: tareasOrdenadas.length,
+          itemCount:
+              tareasOrdenadas.length +
+              (grupales.isEmpty ? 0 : grupales.length + 1),
           itemBuilder: (context, index){
+            if(index == tareasOrdenadas.length){
+              return Padding(
+                padding: EdgeInsets.only(
+                  top: tareasOrdenadas.isEmpty ? 0 : 8,
+                  bottom: 8,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.groups_outlined,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Tareas grupales',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ],
+                ),
+              );
+            }
+            if(index > tareasOrdenadas.length){
+              final grupal = grupales[index - tareasOrdenadas.length - 1];
+              final grupo = resumen!.grupoDe(grupal)!;
+              return Padding(
+                key: ValueKey(grupal.clave),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: TareaGrupalMini(
+                  tarea: grupal,
+                  grupo: grupo,
+                  colorAsignatura: _colores[grupal.asignatura],
+                  onTap: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => TareaGrupalScreen(
+                        tarea: grupal,
+                        grupo: grupo,
+                        repositorio: _repositorio,
+                        colorAsignatura: _colores[grupal.asignatura],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
             final tarea = tareasOrdenadas[index];
             return Padding(
               key: ValueKey(tarea.id),
