@@ -119,7 +119,7 @@ class LocalNotificationService {
     int id = 0,
     String? title,
     String? body,
-    int sec = 10,
+    int min = 10,
   }) async {
     final titleText = (title != null) ? title : "No title";
 
@@ -146,7 +146,7 @@ class LocalNotificationService {
     await _localNotificationPlugin.zonedSchedule(
       id: id,
       scheduledDate: tz.TZDateTime.now(tz.local).add(
-        Duration(seconds: sec),
+        Duration(minutes: min),
       ), //schedule the notification to show after sec seconds,
       notificationDetails: NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.inexact,

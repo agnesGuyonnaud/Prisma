@@ -6,6 +6,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../models/asignatura_model.dart';
 import '../models/tarea_model.dart';
+import '../utils/notif_service.dart';
 
 class TareasRepository {
   TareasRepository({this.fabrica, this.ruta});
@@ -312,6 +313,17 @@ class TareasRepository {
 
     if (tarea.id == null) {
       int idGenerado = await db.insert('tareas', tarea.toMap());
+
+      //notifies the user 1 day before fechaLimite
+      int waitingTime =
+          tarea.fechaLimite.difference(DateTime.now()).inMinutes - (24 * 60);
+      int idNotif = -1 * idGenerado;
+      await LocalNotificationService.plan(
+        id: idNotif,
+        title: "Don't forget it !",
+        body: "Tarea $tarea.titulo is due in 1 day",
+        min: waitingTime,
+      );
       //todo : add notif
       return tarea.copyWith(id: idGenerado);
     } else {
