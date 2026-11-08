@@ -13,6 +13,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
+import 'utils/notif_service.dart';
+
+
+late final notifLaunch;
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +26,9 @@ void main() async{
     debugPrint('No se pudieron limpiar avisos Pomodoro anteriores: $error');
   }
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await LocalNotificationService.initLocalNotification();
+  notifLaunch = await LocalNotificationService.checkNotifLaunch();
+
   runApp(const MainApp());
 }
 
@@ -86,6 +93,12 @@ class MainApp extends StatelessWidget{
               ? const LoginScreen()
               : HomeScreen(repositorio: repositorio);
         },
+      ),
+        ),
+      ),
+      home: HomeScreen(
+        repositorio: repositorio,
+        notifLaunchDetails: notifLaunch,
       ),
     );
   }

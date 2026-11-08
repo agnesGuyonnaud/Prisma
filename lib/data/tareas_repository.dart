@@ -312,6 +312,7 @@ class TareasRepository {
 
     if (tarea.id == null) {
       int idGenerado = await db.insert('tareas', tarea.toMap());
+      //todo : add notif
       return tarea.copyWith(id: idGenerado);
     } else {
       int cambios = await db.update(
@@ -324,6 +325,7 @@ class TareasRepository {
       if (cambios == 0) {
         throw StateError('La tarea que intentas actualizar ya no existe.');
       }
+      //todo : change notif
       return tarea;
     }
   }
@@ -337,6 +339,7 @@ class TareasRepository {
   Future<void> eliminar(int id) async {
     Database db = await database;
     await db.delete('tareas', where: 'id = ?', whereArgs: [id]);
+    //todo : remove notif
   }
 
   /// Input:
@@ -444,7 +447,7 @@ class TareasRepository {
   ///   por clave de tarea grupal.
   /// Resumen:
   /// - Lista los eventos de Calendar creados para tareas grupales.
-  Future<Map<String, Map<String, dynamic>>> eventosCalendarGrupales() async{
+  Future<Map<String, Map<String, dynamic>>> eventosCalendarGrupales() async {
     final db = await database;
     final filas = await db.query(
       'preferencias',
@@ -452,7 +455,7 @@ class TareasRepository {
       whereArgs: ['evento_grupal_%'],
     );
     return {
-      for(final fila in filas)
+      for (final fila in filas)
         (fila['clave'] as String).substring('evento_grupal_'.length):
             jsonDecode(fila['valor'] as String) as Map<String, dynamic>,
     };
@@ -470,7 +473,7 @@ class TareasRepository {
     String clave,
     String eventoId,
     String datos,
-  ) async{
+  ) async {
     final db = await database;
     await db.insert('preferencias', {
       'clave': 'evento_grupal_$clave',
@@ -484,7 +487,7 @@ class TareasRepository {
   /// - `Future<void>`: termina al borrar la preferencia.
   /// Resumen:
   /// - Olvida el evento de una tarea grupal que ya no existe.
-  Future<void> eliminarEventoCalendarGrupal(String clave) async{
+  Future<void> eliminarEventoCalendarGrupal(String clave) async {
     final db = await database;
     await db.delete(
       'preferencias',
@@ -631,11 +634,10 @@ class TareasRepository {
       );
     }
     final db = await database;
-    await db.insert(
-      'metas_semanales',
-      {'asignatura': asignatura.trim(), 'segundos': segundos},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('metas_semanales', {
+      'asignatura': asignatura.trim(),
+      'segundos': segundos,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Input:
@@ -677,10 +679,7 @@ class TareasRepository {
       WHERE fecha >= ? AND fecha < ?
       GROUP BY asignatura
       ''',
-      [
-        inicioSemana.millisecondsSinceEpoch,
-        finSemana.millisecondsSinceEpoch,
-      ],
+      [inicioSemana.millisecondsSinceEpoch, finSemana.millisecondsSinceEpoch],
     );
     return {
       for (final fila in filas)
