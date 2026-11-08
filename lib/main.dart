@@ -15,10 +15,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'utils/notif_service.dart';
 
-
 late final notifLaunch;
 
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await NotificacionesLocalesPomodoro.instancia.cancelar();
@@ -32,7 +31,7 @@ void main() async{
   runApp(const MainApp());
 }
 
-class MainApp extends StatelessWidget{
+class MainApp extends StatelessWidget {
   const MainApp({super.key, this.repositorio});
 
   final TareasRepository? repositorio;
@@ -44,7 +43,7 @@ class MainApp extends StatelessWidget{
   /// Resumen:
   /// - Configura tema, navegación, autenticación e inicio de la app.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
@@ -83,22 +82,19 @@ class MainApp extends StatelessWidget{
 
       home: StreamBuilder<User?>(
         stream: Auth().usuario,
-        builder: (context, snapshot){
-          if(snapshot.connectionState == ConnectionState.waiting){
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
           }
           return snapshot.data == null
               ? const LoginScreen()
-              : HomeScreen(repositorio: repositorio);
+              : HomeScreen(
+                  repositorio: repositorio,
+                  notifLaunchDetails: notifLaunch,
+                );
         },
-      ),
-        ),
-      ),
-      home: HomeScreen(
-        repositorio: repositorio,
-        notifLaunchDetails: notifLaunch,
       ),
     );
   }

@@ -13,6 +13,8 @@ import 'matriz.dart';
 import 'perfil.dart';
 import '../utils/navegacion_principal.dart';
 
+import '../utils/notif_service.dart';
+
 enum _FasePomodoro { estudio, descanso }
 
 class PomodoroScreen extends StatefulWidget {
@@ -183,10 +185,14 @@ class _PomodoroScreenState extends State<PomodoroScreen>
   /// Resumen:
   /// - Abre Inicio conservando el Pomodoro en la pila de navegación.
   Future<void> _abrirInicio() async {
+    final notifLaunch = await LocalNotificationService.checkNotifLaunch();
     if (!mounted) return;
     await abrirInicioConservandoPila(
       context,
-      builder: (_) => HomeScreen(repositorio: _repositorio),
+      builder: (_) => HomeScreen(
+        repositorio: _repositorio,
+        notifLaunchDetails: notifLaunch,
+      ),
     );
   }
 
@@ -212,8 +218,8 @@ class _PomodoroScreenState extends State<PomodoroScreen>
   /// - `Future<void>`: termina cuando se cierra la pantalla de Grupos.
   /// Resumen:
   /// - Abre Grupos encima de Pomodoro para conservar su estado.
-  Future<void> _abrirGrupos() async{
-    if(!mounted) return;
+  Future<void> _abrirGrupos() async {
+    if (!mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         settings: const RouteSettings(name: rutaGrupos),
@@ -1009,7 +1015,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
             onDestinationSelected: (index) {
               if (index == 0) _abrirInicio();
               if (index == 1) _abrirMatriz();
-              if(index == 3) _abrirGrupos();
+              if (index == 3) _abrirGrupos();
             },
             destinations: const [
               NavigationDestination(

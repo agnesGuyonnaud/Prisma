@@ -23,8 +23,8 @@ class LocalNotificationService {
   /// platform-specific settings.
   static Future<void> initLocalNotification() async {
     tz.initializeTimeZones();
-    final name = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(name.toString()));
+    final TimezoneInfo info = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(info.identifier));
     /* await _requestNotificationPermission(); */
 
     const androidSettings = AndroidInitializationSettings(
