@@ -31,7 +31,7 @@ import 'tarea_grupal.dart';
 // Formulario para crear tareas grupales.
 import 'tarea_grupal_formulario.dart';
 
-import '../utils/notif_service.dart';
+import '../utils/task_notif_service.dart';
 
 class GruposScreen extends StatefulWidget {
   const GruposScreen({super.key, this.repositorio, this.grupos});

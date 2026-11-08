@@ -13,7 +13,7 @@ import 'matriz.dart';
 import 'perfil.dart';
 import '../utils/navegacion_principal.dart';
 
-import '../utils/notif_service.dart';
+import '../utils/task_notif_service.dart';
 
 enum _FasePomodoro { estudio, descanso }
 

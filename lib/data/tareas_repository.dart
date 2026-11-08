@@ -3,10 +3,12 @@ import 'dart:convert';
 
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
+import 'package:timezone/timezone.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../models/asignatura_model.dart';
 import '../models/tarea_model.dart';
-import '../utils/notif_service.dart';
+import '../utils/task_notif_service.dart';
 
 class TareasRepository {
   TareasRepository({this.fabrica, this.ruta});
@@ -315,16 +317,22 @@ class TareasRepository {
       int idGenerado = await db.insert('tareas', tarea.toMap());
 
       //notifies the user 1 day before fechaLimite
-      int waitingTime =
-          tarea.fechaLimite.difference(DateTime.now()).inMinutes - (24 * 60);
+      final scheduledNotifDate = tz.TZDateTime.from(
+        tarea.fechaLimite,
+        tz.local,
+      ).subtract(const Duration(days: 1));
+      //
       int idNotif = -1 * idGenerado;
+
+      print("creation tarea '${tarea.titulo}' id : $idGenerado");
+      String titleTarea = tarea.titulo;
       await LocalNotificationService.plan(
         id: idNotif,
         title: "Don't forget it !",
-        body: "Tarea $tarea.titulo is due in 1 day",
-        min: waitingTime,
+        body: "Tarea $titleTarea is due in 1 day",
+        scheduledNotifDate: scheduledNotifDate,
       );
-      //todo : add notif
+      //todo : add notif ONLY if in more than 1 day
       return tarea.copyWith(id: idGenerado);
     } else {
       int cambios = await db.update(
@@ -337,7 +345,21 @@ class TareasRepository {
       if (cambios == 0) {
         throw StateError('La tarea que intentas actualizar ya no existe.');
       }
-      //todo : change notif
+      //todo : change notif ONLY if in mare than 1 day
+      //notifies the user 1 day before fechaLimite
+      final scheduledNotifDate = tz.TZDateTime.from(
+        tarea.fechaLimite,
+        tz.local,
+      ).subtract(const Duration(days: 1));
+      int idNotif = -1 * tarea.id!;
+      String titleTarea = tarea.titulo;
+      await LocalNotificationService.plan(
+        id: idNotif,
+        title: "Don't forget it !",
+        body: "Tarea $titleTarea is due in 1 day",
+        scheduledNotifDate: scheduledNotifDate,
+      );
+
       return tarea;
     }
   }
@@ -352,6 +374,8 @@ class TareasRepository {
     Database db = await database;
     await db.delete('tareas', where: 'id = ?', whereArgs: [id]);
     //todo : remove notif
+    int idNotif = -1 * id;
+    await LocalNotificationService.cancel(id: idNotif);
   }
 
   /// Input:

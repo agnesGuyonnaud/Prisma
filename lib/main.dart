@@ -13,7 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
-import 'utils/notif_service.dart';
+import 'utils/task_notif_service.dart';
 
 late final notifLaunch;
 

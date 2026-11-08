@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/standalone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
+
+import '../data/tareas_repository.dart';
+import '../models/tarea_model.dart';
+import '../screens/tarea.dart';
 
 /// Manages local notifications and handles notification display and routing.
 class LocalNotificationService {
@@ -21,6 +26,7 @@ class LocalNotificationService {
 
   /// Initializes local notification plugin and configures
   /// platform-specific settings.
+
   static Future<void> initLocalNotification() async {
     tz.initializeTimeZones();
     final TimezoneInfo info = await FlutterTimezone.getLocalTimezone();
@@ -38,9 +44,25 @@ class LocalNotificationService {
       /* iOS: iosSettings, */
     );
 
+    final navigatorKey = GlobalKey<NavigatorState>();
     await _localNotificationPlugin.initialize(
       settings: settings,
-      onDidReceiveNotificationResponse: (response) {},
+      onDidReceiveNotificationResponse: (response) async {
+        if (response.id != null) {
+          int tareaId = -1 * response.id!;
+          print("notification response tarea id : $tareaId");
+          final TareasRepository repositorio = TareasRepository.instancia;
+          Tarea? notifTarea = await repositorio.obtener(tareaId);
+          if (notifTarea != null) {
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    TareaScreen(tarea: notifTarea, repositorio: repositorio),
+              ),
+            );
+          }
+        }
+      },
     );
 
     /* await messaging.setForegroundNotificationPresentationOptions(
@@ -119,7 +141,7 @@ class LocalNotificationService {
     int id = 0,
     String? title,
     String? body,
-    int min = 10,
+    TZDateTime scheduledNotifDate,
   }) async {
     final titleText = (title != null) ? title : "No title";
 
@@ -145,9 +167,7 @@ class LocalNotificationService {
 
     await _localNotificationPlugin.zonedSchedule(
       id: id,
-      scheduledDate: tz.TZDateTime.now(tz.local).add(
-        Duration(minutes: min),
-      ), //schedule the notification to show after sec seconds,
+      scheduledDate: scheduledNotifDate,
       notificationDetails: NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.inexact,
     );
@@ -157,6 +177,10 @@ class LocalNotificationService {
           UILocalNotificationDateInterpretation.absoluteTime,
       androidScheduleMode: androidAllowWhileIdle: true,//To show notification even when the app is closed
     ); */
+  }
+
+  static Future<void> cancel({int id = 0}) async {
+    await _localNotificationPlugin.cancel(id: id);
   }
 
   static Future<void> show({int id = 0, String? title, String? body}) async {

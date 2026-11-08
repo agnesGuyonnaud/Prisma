@@ -12,7 +12,7 @@ import 'perfil.dart';
 import 'pomodoro.dart';
 import 'tarea_formulario.dart';
 
-import '../utils/notif_service.dart';
+import '../utils/task_notif_service.dart';
 
 class MatrizScreen extends StatefulWidget {
   const MatrizScreen({super.key, this.repositorio});

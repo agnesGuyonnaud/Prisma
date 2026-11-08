@@ -194,9 +194,10 @@ class _TareaFormularioState extends State<TareaFormulario> {
       }
       if (!mounted) return;
       Navigator.of(context).pop(guardada);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       setState(() => _guardando = false);
+      print("error : ${error}");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
