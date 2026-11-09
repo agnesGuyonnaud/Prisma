@@ -12,8 +12,6 @@ import 'perfil.dart';
 import 'pomodoro.dart';
 import 'tarea_formulario.dart';
 
-import '../utils/task_notif_service.dart';
-
 class MatrizScreen extends StatefulWidget {
   const MatrizScreen({super.key, this.repositorio});
 
@@ -76,14 +74,10 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   /// Resumen:
   /// - Navega a Inicio conservando la pila actual.
   Future<void> _abrirInicio() async {
-    final notifLaunch = await LocalNotificationService.checkNotifLaunch();
     if (!mounted) return;
     await abrirInicioConservandoPila(
       context,
-      builder: (_) => HomeScreen(
-        repositorio: _repositorio,
-        notifLaunchDetails: notifLaunch,
-      ),
+      builder: (_) => HomeScreen(repositorio: _repositorio),
     );
   }
 

@@ -6,7 +6,6 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 
 import '../data/tareas_repository.dart';
-import '../models/tarea_model.dart';
 import '../screens/tarea.dart';
 
 void openTarea(int notifId, GlobalKey<NavigatorState> navigatorKey) async {

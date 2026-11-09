@@ -31,8 +31,6 @@ import 'tarea_grupal.dart';
 // Formulario para crear tareas grupales.
 import 'tarea_grupal_formulario.dart';
 
-import '../utils/task_notif_service.dart';
-
 class GruposScreen extends StatefulWidget {
   const GruposScreen({super.key, this.repositorio, this.grupos});
 
@@ -514,14 +512,10 @@ class _GruposScreenState extends State<GruposScreen> {
   /// Resumen:
   /// - Navega a Inicio conservando la pila actual.
   Future<void> _abrirInicio() async {
-    final notifLaunch = await LocalNotificationService.checkNotifLaunch();
     if (!mounted) return;
     await abrirInicioConservandoPila(
       context,
-      builder: (_) => HomeScreen(
-        repositorio: _repositorio,
-        notifLaunchDetails: notifLaunch,
-      ),
+      builder: (_) => HomeScreen(repositorio: _repositorio),
     );
   }
 

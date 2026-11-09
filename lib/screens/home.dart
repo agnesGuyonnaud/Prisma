@@ -14,14 +14,9 @@ import 'tarea_formulario.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({
-    super.key,
-    this.repositorio,
-    required this.notifLaunchDetails,
-  });
+  const HomeScreen({super.key, this.repositorio});
 
   final TareasRepository? repositorio;
-  final ({bool notifLaunch, int? notifId}) notifLaunchDetails;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();

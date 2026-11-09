@@ -13,8 +13,6 @@ import 'matriz.dart';
 import 'perfil.dart';
 import '../utils/navegacion_principal.dart';
 
-import '../utils/task_notif_service.dart';
-
 enum _FasePomodoro { estudio, descanso }
 
 class PomodoroScreen extends StatefulWidget {
@@ -185,14 +183,10 @@ class _PomodoroScreenState extends State<PomodoroScreen>
   /// Resumen:
   /// - Abre Inicio conservando el Pomodoro en la pila de navegación.
   Future<void> _abrirInicio() async {
-    final notifLaunch = await LocalNotificationService.checkNotifLaunch();
     if (!mounted) return;
     await abrirInicioConservandoPila(
       context,
-      builder: (_) => HomeScreen(
-        repositorio: _repositorio,
-        notifLaunchDetails: notifLaunch,
-      ),
+      builder: (_) => HomeScreen(repositorio: _repositorio),
     );
   }
 

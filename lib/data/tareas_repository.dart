@@ -3,11 +3,9 @@ import 'dart:convert';
 
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
-import 'package:timezone/timezone.dart' as tz;
 
 import '../models/asignatura_model.dart';
 import '../models/tarea_model.dart';
-import '../utils/task_notif_service.dart';
 
 class TareasRepository {
   TareasRepository({this.fabrica, this.ruta});
