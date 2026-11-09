@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:prisma/models/tarea_model.dart';
 
 import '../data/tareas_repository.dart';
 import '../models/meta_estudio_semanal.dart';
 import '../utils/navegacion_principal.dart';
 import '../widgets/tarea_list.dart';
-import 'tarea.dart';
 // Pantalla de tareas grupales.
 import 'grupos.dart';
 import 'matriz.dart';
@@ -39,23 +37,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   void initState() {
     super.initState();
     _repositorio = widget.repositorio ?? TareasRepository.instancia;
-    if (widget.notifLaunchDetails.notifLaunch == true &&
-        widget.notifLaunchDetails.notifId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        _repositorio = widget.repositorio ?? TareasRepository.instancia;
-        Tarea? notifTarea = await _repositorio.obtener(
-          widget.notifLaunchDetails.notifId!,
-        );
-        if (notifTarea != null) {
-          Navigator.of(context).push<void>(
-            MaterialPageRoute<void>(
-              builder: (_) =>
-                  TareaScreen(tarea: notifTarea, repositorio: _repositorio),
-            ),
-          );
-        }
-      });
-    }
 
     _progresosMetas = _cargarProgresosMetas();
   }

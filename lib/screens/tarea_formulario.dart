@@ -8,6 +8,10 @@ import '../utils/fecha_tarea.dart';
 import '../widgets/importancia_slider.dart';
 import 'asignaturas.dart';
 
+import '../utils/task_notif_service.dart';
+
+import 'package:timezone/timezone.dart' as tz;
+
 class TareaFormulario extends StatefulWidget {
   const TareaFormulario({super.key, required this.repositorio, this.tarea});
 
@@ -192,6 +196,48 @@ class _TareaFormularioState extends State<TareaFormulario> {
           );
         }
       }
+
+      //notifies the user 1 day before fechaLimite
+
+      if (guardada.id != null) {
+        int idNotif = -1 * guardada.id!;
+        String titleTarea = tarea.titulo;
+        final scheduledNotifDate = tz.TZDateTime.from(
+          tarea.fechaLimite,
+          tz.local,
+        ).subtract(const Duration(days: 1));
+
+        if (scheduledNotifDate.isAfter(tz.TZDateTime.now(tz.local))) {
+          await LocalNotificationService.plan(
+            id: idNotif,
+            title: "Don't forget it !",
+            body: "Tarea $titleTarea is due in 1 day",
+            scheduledNotifDate: scheduledNotifDate,
+          );
+          final String waitingTimeBeforeNotif = scheduledNotifDate
+              .difference(tz.TZDateTime.now(tz.local))
+              .toString();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Esa tarea generara notificacion en $waitingTimeBeforeNotif',
+              ),
+            ),
+          );
+        } else {
+          final String waitingTimeBeforeNotif = scheduledNotifDate
+              .difference(tz.TZDateTime.now(tz.local))
+              .toString();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Esa tarea no generara notificacion (notificacion dentro de $waitingTimeBeforeNotif)',
+              ),
+            ),
+          );
+        }
+      }
+
       if (!mounted) return;
       Navigator.of(context).pop(guardada);
     } catch (error) {

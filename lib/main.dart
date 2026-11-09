@@ -15,7 +15,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'utils/task_notif_service.dart';
 
-late final notifLaunch;
+late final notifLaunchDetails;
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,10 +26,15 @@ void main() async {
     debugPrint('No se pudieron limpiar avisos Pomodoro anteriores: $error');
   }
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await LocalNotificationService.initLocalNotification();
-  notifLaunch = await LocalNotificationService.checkNotifLaunch();
+  await LocalNotificationService.initLocalNotification(navigatorKey);
+  notifLaunchDetails = await LocalNotificationService.checkNotifLaunch();
 
   runApp(const MainApp());
+  if (notifLaunchDetails.notifLaunch) {
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => openTarea(notifLaunchDetails.notifId!, navigatorKey),
+    );
+  }
 }
 
 class MainApp extends StatelessWidget {
@@ -45,6 +51,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
@@ -92,7 +99,7 @@ class MainApp extends StatelessWidget {
               ? const LoginScreen()
               : HomeScreen(
                   repositorio: repositorio,
-                  notifLaunchDetails: notifLaunch,
+                  notifLaunchDetails: notifLaunchDetails,
                 );
         },
       ),
