@@ -31,7 +31,7 @@ import 'tarea_grupal.dart';
 // Formulario para crear tareas grupales.
 import 'tarea_grupal_formulario.dart';
 
-class GruposScreen extends StatefulWidget{
+class GruposScreen extends StatefulWidget {
   const GruposScreen({super.key, this.repositorio, this.grupos});
 
   final TareasRepository? repositorio;
@@ -41,7 +41,7 @@ class GruposScreen extends StatefulWidget{
   State<GruposScreen> createState() => _GruposScreenState();
 }
 
-class _GruposScreenState extends State<GruposScreen>{
+class _GruposScreenState extends State<GruposScreen> {
   late final TareasRepository _repositorio;
   late final GruposRepository _grupos;
   StreamSubscription<ResumenGrupos>? _suscripcion;
@@ -52,7 +52,7 @@ class _GruposScreenState extends State<GruposScreen>{
   bool _avisoCalendar = false;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _repositorio = widget.repositorio ?? TareasRepository.instancia;
     _grupos = widget.grupos ?? GruposRepository.instancia;
@@ -61,7 +61,7 @@ class _GruposScreenState extends State<GruposScreen>{
   }
 
   @override
-  void dispose(){
+  void dispose() {
     _suscripcion?.cancel();
     super.dispose();
   }
@@ -73,19 +73,22 @@ class _GruposScreenState extends State<GruposScreen>{
   /// Resumen:
   /// - Escucha grupos y tareas en tiempo real, actualiza la pantalla y
   ///   sincroniza Calendar con cada cambio.
-  void _escuchar(){
+  void _escuchar() {
     _suscripcion?.cancel();
-    _suscripcion = _grupos.resumen().listen((resumen){
-      if(!mounted) return;
-      setState((){
-        _resumen = resumen;
-        _error = false;
-        if(!resumen.grupos.any((g) => g.codigo == _filtro)) _filtro = null;
-      });
-      _sincronizarCalendar(resumen);
-    }, onError: (_){
-      if(mounted) setState(() => _error = true);
-    });
+    _suscripcion = _grupos.resumen().listen(
+      (resumen) {
+        if (!mounted) return;
+        setState(() {
+          _resumen = resumen;
+          _error = false;
+          if (!resumen.grupos.any((g) => g.codigo == _filtro)) _filtro = null;
+        });
+        _sincronizarCalendar(resumen);
+      },
+      onError: (_) {
+        if (mounted) setState(() => _error = true);
+      },
+    );
   }
 
   /// Input:
@@ -94,8 +97,8 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `void`: reinicia la carga.
   /// Resumen:
   /// - Limpia el error y vuelve a escuchar los grupos.
-  void _reintentar(){
-    setState((){
+  void _reintentar() {
+    setState(() {
       _error = false;
       _resumen = null;
     });
@@ -108,10 +111,10 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina al guardar el mapa de colores.
   /// Resumen:
   /// - Asocia cada asignatura con su color para pintar las tarjetas.
-  Future<void> _cargarColores() async{
+  Future<void> _cargarColores() async {
     final asignaturas = await _repositorio.listarAsignaturas();
-    if(!mounted) return;
-    setState(() => _colores = {for(final a in asignaturas) a.nombre: a.color});
+    if (!mounted) return;
+    setState(() => _colores = {for (final a in asignaturas) a.nombre: a.color});
   }
 
   /// Input:
@@ -120,13 +123,12 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina al sincronizar o fallar.
   /// Resumen:
   /// - Sincroniza las tareas con Calendar y avisa una sola vez si falla.
-  Future<void> _sincronizarCalendar(ResumenGrupos resumen) async{
-    try{
-      await GoogleCalendarSync(
-        repositorio: _repositorio,
-      ).sincronizarTareasGrupalesSiHabilitada(resumen.tareas);
-    } on GoogleCalendarSyncException catch(error){
-      if(!mounted || _avisoCalendar) return;
+  Future<void> _sincronizarCalendar(ResumenGrupos resumen) async {
+    try {
+      await GoogleCalendarSync(repositorio: _repositorio)
+          .sincronizarTareasGrupalesSiHabilitada(resumen.tareas);
+    } on GoogleCalendarSyncException catch (error) {
+      if (!mounted || _avisoCalendar) return;
       _avisoCalendar = true;
       _mostrarMensaje(
         'Las tareas grupales no se sincronizaron con Calendar: ${error.message}',
@@ -140,7 +142,7 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `void`: muestra un aviso en la pantalla.
   /// Resumen:
   /// - Reemplaza el aviso actual por uno nuevo.
-  void _mostrarMensaje(String mensaje){
+  void _mostrarMensaje(String mensaje) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(mensaje)));
@@ -153,8 +155,8 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `String`: mensaje para el usuario.
   /// Resumen:
   /// - Usa el mensaje de las validaciones o uno genérico.
-  String _textoError(Object error, String porDefecto){
-    if(error is ArgumentError) return error.message.toString();
+  String _textoError(Object error, String porDefecto) {
+    if (error is ArgumentError) return error.message.toString();
     return porDefecto;
   }
 
@@ -164,7 +166,7 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina al crear el grupo o cancelar.
   /// Resumen:
   /// - Pide el nombre, crea el grupo y muestra su código para compartirlo.
-  Future<void> _crearGrupo() async{
+  Future<void> _crearGrupo() async {
     final nombre = await showDialog<String>(
       context: context,
       builder: (_) => const _DialogoTexto(
@@ -176,13 +178,13 @@ class _GruposScreenState extends State<GruposScreen>{
         largo: 60,
       ),
     );
-    if(nombre == null || !mounted) return;
-    try{
+    if (nombre == null || !mounted) return;
+    try {
       final grupo = await _grupos.crearGrupo(nombre);
-      if(!mounted) return;
+      if (!mounted) return;
       await _mostrarCodigo(grupo);
-    } catch(error){
-      if(mounted){
+    } catch (error) {
+      if (mounted) {
         _mostrarMensaje(_textoError(error, 'No se pudo crear el grupo.'));
       }
     }
@@ -194,7 +196,7 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina al unirse o cancelar.
   /// Resumen:
   /// - Pide el código y agrega al usuario al grupo correspondiente.
-  Future<void> _unirseAGrupo() async{
+  Future<void> _unirseAGrupo() async {
     final codigo = await showDialog<String>(
       context: context,
       builder: (_) => const _DialogoTexto(
@@ -207,12 +209,12 @@ class _GruposScreenState extends State<GruposScreen>{
         mayusculas: true,
       ),
     );
-    if(codigo == null || !mounted) return;
-    try{
+    if (codigo == null || !mounted) return;
+    try {
       final grupo = await _grupos.unirseAGrupo(codigo);
-      if(mounted) _mostrarMensaje('Te uniste a ${grupo.nombre}.');
-    } catch(error){
-      if(mounted){
+      if (mounted) _mostrarMensaje('Te uniste a ${grupo.nombre}.');
+    } catch (error) {
+      if (mounted) {
         _mostrarMensaje(_textoError(error, 'No se pudo unir al grupo.'));
       }
     }
@@ -224,7 +226,7 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina al salir o cancelar.
   /// Resumen:
   /// - Pide confirmación y quita al usuario del grupo.
-  Future<void> _salirDeGrupo(Grupo grupo) async{
+  Future<void> _salirDeGrupo(Grupo grupo) async {
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -248,11 +250,11 @@ class _GruposScreenState extends State<GruposScreen>{
         ],
       ),
     );
-    if(confirmado != true || !mounted) return;
-    try{
+    if (confirmado != true || !mounted) return;
+    try {
       await _grupos.salirDeGrupo(grupo);
-    } catch(_){
-      if(mounted) _mostrarMensaje('No se pudo salir del grupo.');
+    } catch (_) {
+      if (mounted) _mostrarMensaje('No se pudo salir del grupo.');
     }
   }
 
@@ -262,9 +264,9 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina al copiar.
   /// Resumen:
   /// - Copia el código al portapapeles y avisa al usuario.
-  Future<void> _copiarCodigo(Grupo grupo) async{
+  Future<void> _copiarCodigo(Grupo grupo) async {
     await Clipboard.setData(ClipboardData(text: grupo.codigo));
-    if(mounted) _mostrarMensaje('Código ${grupo.codigo} copiado.');
+    if (mounted) _mostrarMensaje('Código ${grupo.codigo} copiado.');
   }
 
   /// Input:
@@ -273,10 +275,10 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina al cerrar el diálogo.
   /// Resumen:
   /// - Muestra el código del grupo con la opción de copiarlo.
-  Future<void> _mostrarCodigo(Grupo grupo) async{
+  Future<void> _mostrarCodigo(Grupo grupo) async {
     await showDialog<void>(
       context: context,
-      builder: (context){
+      builder: (context) {
         final tema = Theme.of(context);
         return AlertDialog(
           icon: const Icon(Icons.celebration_outlined),
@@ -301,7 +303,7 @@ class _GruposScreenState extends State<GruposScreen>{
           ),
           actions: [
             TextButton.icon(
-              onPressed: (){
+              onPressed: () {
                 Navigator.pop(context);
                 _copiarCodigo(grupo);
               },
@@ -325,13 +327,13 @@ class _GruposScreenState extends State<GruposScreen>{
   /// Resumen:
   /// - Lista los grupos con su código e integrantes, y ofrece copiar el
   ///   código, salir, unirse o crear un grupo.
-  void _abrirMisGrupos(){
+  void _abrirMisGrupos() {
     final grupos = _resumen?.grupos ?? [];
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (context){
+      builder: (context) {
         final tema = Theme.of(context);
         final colores = tema.colorScheme;
         return SafeArea(
@@ -343,7 +345,7 @@ class _GruposScreenState extends State<GruposScreen>{
               children: [
                 Text('Mis grupos', style: tema.textTheme.titleLarge),
                 const SizedBox(height: 8),
-                if(grupos.isEmpty)
+                if (grupos.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
@@ -357,7 +359,7 @@ class _GruposScreenState extends State<GruposScreen>{
                   child: ListView(
                     shrinkWrap: true,
                     children: [
-                      for(final grupo in grupos)
+                      for (final grupo in grupos)
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
@@ -377,10 +379,10 @@ class _GruposScreenState extends State<GruposScreen>{
                           ),
                           trailing: PopupMenuButton<String>(
                             tooltip: 'Opciones del grupo',
-                            onSelected: (accion){
+                            onSelected: (accion) {
                               Navigator.pop(context);
-                              if(accion == 'copiar') _copiarCodigo(grupo);
-                              if(accion == 'salir') _salirDeGrupo(grupo);
+                              if (accion == 'copiar') _copiarCodigo(grupo);
+                              if (accion == 'salir') _salirDeGrupo(grupo);
                             },
                             itemBuilder: (context) => [
                               const PopupMenuItem(
@@ -417,7 +419,7 @@ class _GruposScreenState extends State<GruposScreen>{
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: (){
+                        onPressed: () {
                           Navigator.pop(context);
                           _unirseAGrupo();
                         },
@@ -428,7 +430,7 @@ class _GruposScreenState extends State<GruposScreen>{
                     const SizedBox(width: 12),
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: (){
+                        onPressed: () {
                           Navigator.pop(context);
                           _crearGrupo();
                         },
@@ -452,9 +454,9 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina al cerrar el formulario.
   /// Resumen:
   /// - Abre el formulario de tarea grupal con el grupo filtrado elegido.
-  Future<void> _crearTarea() async{
+  Future<void> _crearTarea() async {
     final resumen = _resumen;
-    if(resumen == null) return;
+    if (resumen == null) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => TareaGrupalFormulario(
@@ -474,7 +476,7 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina al volver del detalle.
   /// Resumen:
   /// - Abre el detalle y recarga los colores al volver.
-  Future<void> _abrirTarea(TareaGrupal tarea, Grupo grupo) async{
+  Future<void> _abrirTarea(TareaGrupal tarea, Grupo grupo) async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => TareaGrupalScreen(
@@ -486,7 +488,7 @@ class _GruposScreenState extends State<GruposScreen>{
         ),
       ),
     );
-    if(mounted) _cargarColores();
+    if (mounted) _cargarColores();
   }
 
   /// Input:
@@ -495,7 +497,7 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `void`: inicia la navegación al perfil.
   /// Resumen:
   /// - Abre la pantalla de perfil.
-  void _abrirPerfil(){
+  void _abrirPerfil() {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => PerfilScreen(repositorio: _repositorio),
@@ -509,8 +511,8 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina cuando se abre Inicio.
   /// Resumen:
   /// - Navega a Inicio conservando la pila actual.
-  Future<void> _abrirInicio() async{
-    if(!mounted) return;
+  Future<void> _abrirInicio() async {
+    if (!mounted) return;
     await abrirInicioConservandoPila(
       context,
       builder: (_) => HomeScreen(repositorio: _repositorio),
@@ -523,8 +525,8 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina cuando finaliza la navegación a Matriz.
   /// Resumen:
   /// - Navega a la matriz de tareas.
-  Future<void> _abrirMatriz() async{
-    if(!mounted) return;
+  Future<void> _abrirMatriz() async {
+    if (!mounted) return;
     await navegarAPantallaPrincipal(
       context,
       ruta: rutaMatriz,
@@ -538,8 +540,8 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Future<void>`: termina cuando finaliza la navegación a Pomodoro.
   /// Resumen:
   /// - Navega a Pomodoro como pantalla principal.
-  Future<void> _abrirPomodoro() async{
-    if(!mounted) return;
+  Future<void> _abrirPomodoro() async {
+    if (!mounted) return;
     await navegarAPantallaPrincipal(
       context,
       ruta: rutaPomodoro,
@@ -555,7 +557,7 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - Construye el encabezado, el contenido, el botón "Añadir tarea" y la
   ///   navegación inferior con Grupos seleccionado.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
     final hayGrupos = _resumen?.grupos.isNotEmpty ?? false;
@@ -623,10 +625,10 @@ class _GruposScreenState extends State<GruposScreen>{
           child: NavigationBar(
             backgroundColor: colores.surfaceContainer,
             selectedIndex: 3,
-            onDestinationSelected: (index){
-              if(index == 0) _abrirInicio();
-              if(index == 1) _abrirMatriz();
-              if(index == 2) _abrirPomodoro();
+            onDestinationSelected: (index) {
+              if (index == 0) _abrirInicio();
+              if (index == 1) _abrirMatriz();
+              if (index == 2) _abrirPomodoro();
             },
             destinations: const [
               NavigationDestination(
@@ -659,12 +661,12 @@ class _GruposScreenState extends State<GruposScreen>{
   /// - `Widget`: estado de carga, error, sin grupos o lista de tareas.
   /// Resumen:
   /// - Construye los filtros por grupo y las tarjetas de tareas grupales.
-  Widget _construirContenido(BuildContext context){
+  Widget _construirContenido(BuildContext context) {
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
     final resumen = _resumen;
 
-    if(_error){
+    if (_error) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -675,10 +677,10 @@ class _GruposScreenState extends State<GruposScreen>{
         ),
       );
     }
-    if(resumen == null){
+    if (resumen == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    if(resumen.grupos.isEmpty){
+    if (resumen.grupos.isEmpty) {
       return Align(
         alignment: Alignment.topCenter,
         child: Card.filled(
@@ -720,8 +722,8 @@ class _GruposScreenState extends State<GruposScreen>{
     }
 
     final tareas = [
-      for(final tarea in resumen.tareas)
-        if(_filtro == null || tarea.grupo == _filtro) tarea,
+      for (final tarea in resumen.tareas)
+        if (_filtro == null || tarea.grupo == _filtro) tarea,
     ];
 
     return Column(
@@ -736,7 +738,7 @@ class _GruposScreenState extends State<GruposScreen>{
                 selected: _filtro == null,
                 onSelected: (_) => setState(() => _filtro = null),
               ),
-              for(final grupo in resumen.grupos) ...[
+              for (final grupo in resumen.grupos) ...[
                 const SizedBox(width: 8),
                 FilterChip(
                   label: Text(grupo.nombre),
@@ -769,7 +771,7 @@ class _GruposScreenState extends State<GruposScreen>{
                   padding: const EdgeInsets.only(bottom: 88),
                   itemCount: tareas.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index){
+                  itemBuilder: (context, index) {
                     final tarea = tareas[index];
                     final grupo = resumen.grupoDe(tarea)!;
                     return TareaGrupalMini(
@@ -787,7 +789,7 @@ class _GruposScreenState extends State<GruposScreen>{
   }
 }
 
-class _DialogoTexto extends StatefulWidget{
+class _DialogoTexto extends StatefulWidget {
   const _DialogoTexto({
     required this.icono,
     required this.titulo,
@@ -810,12 +812,12 @@ class _DialogoTexto extends StatefulWidget{
   State<_DialogoTexto> createState() => _DialogoTextoState();
 }
 
-class _DialogoTextoState extends State<_DialogoTexto>{
+class _DialogoTextoState extends State<_DialogoTexto> {
   final _formulario = GlobalKey<FormState>();
   final _texto = TextEditingController();
 
   @override
-  void dispose(){
+  void dispose() {
     _texto.dispose();
     super.dispose();
   }
@@ -826,8 +828,8 @@ class _DialogoTextoState extends State<_DialogoTexto>{
   /// - `void`: cierra el diálogo con el texto escrito.
   /// Resumen:
   /// - Valida el campo y devuelve su texto.
-  void _aceptar(){
-    if(!_formulario.currentState!.validate()) return;
+  void _aceptar() {
+    if (!_formulario.currentState!.validate()) return;
     Navigator.of(context).pop(_texto.text.trim());
   }
 
@@ -838,7 +840,7 @@ class _DialogoTextoState extends State<_DialogoTexto>{
   /// Resumen:
   /// - Construye el diálogo reutilizado para crear un grupo o unirse.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return AlertDialog(
       icon: Icon(widget.icono),
       title: Text(widget.titulo),

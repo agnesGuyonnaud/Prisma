@@ -32,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   void initState() {
     super.initState();
     _repositorio = widget.repositorio ?? TareasRepository.instancia;
+
     _progresosMetas = _cargarProgresosMetas();
   }
 
@@ -153,8 +154,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   /// - `Future<void>`: termina cuando finaliza la navegación a Grupos.
   /// Resumen:
   /// - Navega a la pantalla de tareas grupales.
-  Future<void> _abrirGrupos() async{
-    if(!mounted) return;
+  Future<void> _abrirGrupos() async {
+    if (!mounted) return;
     await navegarAPantallaPrincipal(
       context,
       ruta: rutaGrupos,
@@ -499,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             onDestinationSelected: (index) {
               if (index == 1) _abrirMatriz();
               if (index == 2) _abrirPomodoro();
-              if(index == 3) _abrirGrupos();
+              if (index == 3) _abrirGrupos();
             },
             destinations: const [
               NavigationDestination(

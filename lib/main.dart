@@ -13,8 +13,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
+import 'utils/task_notif_service.dart';
 
-void main() async{
+late final notifLaunchDetails;
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await NotificacionesLocalesPomodoro.instancia.cancelar();
@@ -22,10 +26,18 @@ void main() async{
     debugPrint('No se pudieron limpiar avisos Pomodoro anteriores: $error');
   }
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await LocalNotificationService.initLocalNotification(navigatorKey);
+  notifLaunchDetails = await LocalNotificationService.checkNotifLaunch();
+
   runApp(const MainApp());
+  if (notifLaunchDetails.notifLaunch) {
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => openTarea(notifLaunchDetails.notifId!, navigatorKey),
+    );
+  }
 }
 
-class MainApp extends StatelessWidget{
+class MainApp extends StatelessWidget {
   const MainApp({super.key, this.repositorio});
 
   final TareasRepository? repositorio;
@@ -37,8 +49,9 @@ class MainApp extends StatelessWidget{
   /// Resumen:
   /// - Configura tema, navegación, autenticación e inicio de la app.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
@@ -76,15 +89,18 @@ class MainApp extends StatelessWidget{
 
       home: StreamBuilder<User?>(
         stream: Auth().usuario,
-        builder: (context, snapshot){
-          if(snapshot.connectionState == ConnectionState.waiting){
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
           }
           return snapshot.data == null
               ? const LoginScreen()
-              : HomeScreen(repositorio: repositorio);
+              : HomeScreen(
+                  repositorio: repositorio,
+                  notifLaunchDetails: notifLaunchDetails,
+                );
         },
       ),
     );

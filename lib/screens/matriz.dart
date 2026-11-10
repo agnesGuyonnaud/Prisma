@@ -27,17 +27,17 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   ModalRoute<dynamic>? _ruta;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _repositorio = widget.repositorio ?? TareasRepository.instancia;
     _tareas = _repositorio.listar();
   }
 
   @override
-  void didChangeDependencies(){
+  void didChangeDependencies() {
     super.didChangeDependencies();
     final ruta = ModalRoute.of(context);
-    if (ruta != _ruta){
+    if (ruta != _ruta) {
       if (_ruta != null) tareasRouteObserver.unsubscribe(this);
       _ruta = ruta;
       if (ruta != null) tareasRouteObserver.subscribe(this, ruta);
@@ -48,7 +48,7 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   void didPopNext() => _recargar();
 
   @override
-  void dispose(){
+  void dispose() {
     tareasRouteObserver.unsubscribe(this);
     super.dispose();
   }
@@ -59,10 +59,10 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   /// - `void`: no devuelve un valor.
   /// Resumen:
   /// - Actualiza la consulta de tareas para volver a cargar la matriz.
-  void _recargar(){
+  void _recargar() {
     if (!mounted) return;
     final consulta = _repositorio.listar();
-    setState((){
+    setState(() {
       _tareas = consulta;
     });
   }
@@ -73,7 +73,7 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   /// - `Future<void>`: termina cuando se abre Inicio.
   /// Resumen:
   /// - Navega a Inicio conservando la pila actual.
-  Future<void> _abrirInicio() async{
+  Future<void> _abrirInicio() async {
     if (!mounted) return;
     await abrirInicioConservandoPila(
       context,
@@ -87,7 +87,7 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   /// - `Future<void>`: termina cuando se abre Pomodoro.
   /// Resumen:
   /// - Navega a Pomodoro como pantalla principal.
-  Future<void> _abrirPomodoro() async{
+  Future<void> _abrirPomodoro() async {
     if (!mounted) return;
     await navegarAPantallaPrincipal(
       context,
@@ -102,8 +102,8 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   /// - `Future<void>`: termina cuando finaliza la navegación a Grupos.
   /// Resumen:
   /// - Navega a la pantalla de tareas grupales.
-  Future<void> _abrirGrupos() async{
-    if(!mounted) return;
+  Future<void> _abrirGrupos() async {
+    if (!mounted) return;
     await navegarAPantallaPrincipal(
       context,
       ruta: rutaGrupos,
@@ -117,7 +117,7 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   /// - `Future<void>`: termina cuando se cierra el formulario de tarea.
   /// Resumen:
   /// - Abre el formulario para crear una tarea.
-  Future<void> _crearTarea() async{
+  Future<void> _crearTarea() async {
     await Navigator.of(context).push<Tarea>(
       MaterialPageRoute(
         builder: (_) => TareaFormulario(repositorio: _repositorio),
@@ -131,7 +131,7 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   /// - `void`: inicia la navegación sin esperar su resultado.
   /// Resumen:
   /// - Abre la pantalla de perfil.
-  void _abrirPerfil(){
+  void _abrirPerfil() {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => PerfilScreen(repositorio: _repositorio),
@@ -146,7 +146,7 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
   /// Resumen:
   /// - Construye la pantalla, la lista de tareas y su navegación inferior.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
 
@@ -190,11 +190,11 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
               Expanded(
                 child: FutureBuilder<List<Tarea>>(
                   future: _tareas,
-                  builder: (context, snapshot){
-                    if (snapshot.connectionState != ConnectionState.done){
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
                       return const Center(child: CircularProgressIndicator());
                     }
-                    if (snapshot.hasError){
+                    if (snapshot.hasError) {
                       return Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -233,10 +233,10 @@ class _MatrizScreenState extends State<MatrizScreen> with RouteAware {
           child: NavigationBar(
             backgroundColor: colores.surfaceContainer,
             selectedIndex: 1,
-            onDestinationSelected: (index){
+            onDestinationSelected: (index) {
               if (index == 0) _abrirInicio();
               if (index == 2) _abrirPomodoro();
-              if(index == 3) _abrirGrupos();
+              if (index == 3) _abrirGrupos();
             },
             destinations: const [
               NavigationDestination(

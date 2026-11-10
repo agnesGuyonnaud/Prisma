@@ -212,8 +212,8 @@ class _PomodoroScreenState extends State<PomodoroScreen>
   /// - `Future<void>`: termina cuando se cierra la pantalla de Grupos.
   /// Resumen:
   /// - Abre Grupos encima de Pomodoro para conservar su estado.
-  Future<void> _abrirGrupos() async{
-    if(!mounted) return;
+  Future<void> _abrirGrupos() async {
+    if (!mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         settings: const RouteSettings(name: rutaGrupos),
@@ -1009,7 +1009,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
             onDestinationSelected: (index) {
               if (index == 0) _abrirInicio();
               if (index == 1) _abrirMatriz();
-              if(index == 3) _abrirGrupos();
+              if (index == 3) _abrirGrupos();
             },
             destinations: const [
               NavigationDestination(

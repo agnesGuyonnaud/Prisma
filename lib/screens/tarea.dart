@@ -7,6 +7,8 @@ import '../utils/fecha_tarea.dart';
 import '../widgets/importancia_slider.dart';
 import 'tarea_formulario.dart';
 
+import '../utils/task_notif_service.dart';
+
 class TareaScreen extends StatefulWidget {
   const TareaScreen({
     super.key,
@@ -28,7 +30,7 @@ class _TareaScreenState extends State<TareaScreen> {
   int? _importanciaTemporal;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _tarea = widget.tarea;
     _colorAsignatura = _buscarColorAsignatura(_tarea.asignatura);
@@ -40,9 +42,9 @@ class _TareaScreenState extends State<TareaScreen> {
   /// - `Future<Color?>`: color encontrado o `null` si no existe la asignatura.
   /// Resumen:
   /// - Busca el color de la asignatura en el repositorio.
-  Future<Color?> _buscarColorAsignatura(String nombre) async{
+  Future<Color?> _buscarColorAsignatura(String nombre) async {
     final asignaturas = await widget.repositorio.listarAsignaturas();
-    for (final asignatura in asignaturas){
+    for (final asignatura in asignaturas) {
       if (asignatura.nombre == nombre) return asignatura.color;
     }
     return null;
@@ -54,7 +56,7 @@ class _TareaScreenState extends State<TareaScreen> {
   /// - `void`: muestra un aviso en la pantalla.
   /// Resumen:
   /// - Presenta el error en una notificación temporal.
-  void _mostrarError(String mensaje){
+  void _mostrarError(String mensaje) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(mensaje)));
@@ -66,15 +68,15 @@ class _TareaScreenState extends State<TareaScreen> {
   /// - `Future<void>`: termina cuando se cierra el formulario de edición.
   /// Resumen:
   /// - Abre el formulario y actualiza la tarea si se guardan cambios.
-  Future<void> _editar() async{
+  Future<void> _editar() async {
     final editada = await Navigator.of(context).push<Tarea>(
       MaterialPageRoute(
         builder: (_) =>
             TareaFormulario(repositorio: widget.repositorio, tarea: _tarea),
       ),
     );
-    if (mounted && editada != null){
-      setState((){
+    if (mounted && editada != null) {
+      setState(() {
         _tarea = editada;
         _colorAsignatura = _buscarColorAsignatura(_tarea.asignatura);
       });
@@ -87,26 +89,25 @@ class _TareaScreenState extends State<TareaScreen> {
   /// - `Future<void>`: termina tras guardar y sincronizar, o mostrar un error.
   /// Resumen:
   /// - Persiste la tarea y sincroniza su evento de Calendar si está habilitado.
-  Future<void> _guardarCambio(Tarea actualizada) async{
+  Future<void> _guardarCambio(Tarea actualizada) async {
     if (_guardando) return;
     setState(() => _guardando = true);
     try {
       final guardada = await widget.repositorio.guardar(actualizada);
       if (mounted) setState(() => _tarea = guardada);
-      try{
-        await GoogleCalendarSync(
-          repositorio: widget.repositorio,
-        ).sincronizarTareaSiHabilitada(guardada);
-      } on GoogleCalendarSyncException catch (error){
-        if (mounted){
+      try {
+        await GoogleCalendarSync(repositorio: widget.repositorio)
+            .sincronizarTareaSiHabilitada(guardada);
+      } on GoogleCalendarSyncException catch (error) {
+        if (mounted) {
           _mostrarError(
             'La tarea se guardó, pero no se sincronizó con Calendar: '
             '${error.message}',
           );
         }
       }
-    } catch (_){
-      if (mounted){
+    } catch (_) {
+      if (mounted) {
         _mostrarError('No se pudo guardar el cambio. Inténtalo otra vez.');
       }
     } finally {
@@ -120,8 +121,8 @@ class _TareaScreenState extends State<TareaScreen> {
   /// - `Future<void>`: termina después del guardado y actualización visual.
   /// Resumen:
   /// - Guarda la importancia elegida y limpia el valor temporal del control.
-  Future<void> _cambiarImportancia(int valor) async{
-    if (valor != _tarea.importancia){
+  Future<void> _cambiarImportancia(int valor) async {
+    if (valor != _tarea.importancia) {
       await _guardarCambio(_tarea.copyWith(importancia: valor));
     }
 
@@ -134,7 +135,7 @@ class _TareaScreenState extends State<TareaScreen> {
   /// - `Future<void>`: termina al cancelar o completar la eliminación.
   /// Resumen:
   /// - Confirma, elimina el evento de Calendar si corresponde y borra la tarea.
-  Future<void> _eliminar() async{
+  Future<void> _eliminar() async {
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -159,16 +160,19 @@ class _TareaScreenState extends State<TareaScreen> {
     );
     if (confirmado != true || !mounted) return;
     setState(() => _guardando = true);
+
+    //remove notif
+    int idNotif = -1 * _tarea.id!;
+    await LocalNotificationService.cancel(id: idNotif);
     try {
-      await GoogleCalendarSync(
-        repositorio: widget.repositorio,
-      ).eliminarEventoSiHabilitado(_tarea.id!);
+      await GoogleCalendarSync(repositorio: widget.repositorio)
+          .eliminarEventoSiHabilitado(_tarea.id!);
       await widget.repositorio.eliminar(_tarea.id!);
       if (mounted) Navigator.of(context).pop();
-    } on GoogleCalendarSyncException catch (error){
+    } on GoogleCalendarSyncException catch (error) {
       if (mounted) _mostrarError(error.message);
-    } catch (_){
-      if (mounted){
+    } catch (_) {
+      if (mounted) {
         _mostrarError('No se pudo eliminar la tarea. Inténtalo otra vez.');
       }
     } finally {
@@ -183,7 +187,7 @@ class _TareaScreenState extends State<TareaScreen> {
   /// Resumen:
   /// - Define los colores de la pantalla y delega la construcción del detalle.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final colores = ColorScheme.fromSeed(
       seedColor: const Color(0xFF6674E8),
       primary: const Color(0xFF6674E8),
@@ -203,7 +207,7 @@ class _TareaScreenState extends State<TareaScreen> {
   /// - `Widget`: devuelve el contenido de detalle y acciones de la tarea.
   /// Resumen:
   /// - Construye la información editable y el resumen de la tarea.
-  Widget _construirDetalle(BuildContext context){
+  Widget _construirDetalle(BuildContext context) {
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
     final textos = tema.textTheme;
@@ -236,8 +240,8 @@ class _TareaScreenState extends State<TareaScreen> {
               enabled: !_guardando,
               tooltip: 'Más opciones',
               icon: const Icon(Icons.more_vert),
-              onSelected: (accion){
-                if (accion == 'eliminar'){
+              onSelected: (accion) {
+                if (accion == 'eliminar') {
                   _eliminar();
                 }
               },
@@ -286,7 +290,7 @@ class _TareaScreenState extends State<TareaScreen> {
 
                               child: FutureBuilder<Color?>(
                                 future: _colorAsignatura,
-                                builder: (context, snapshot){
+                                builder: (context, snapshot) {
                                   final color =
                                       snapshot.data ?? const Color(0xFFBAE147);
                                   final colorTexto =
@@ -395,7 +399,7 @@ class _TareaScreenState extends State<TareaScreen> {
                             ),
                             onChanged: _guardando
                                 ? null
-                                : (valor){
+                                : (valor) {
                                     final subtareas = [..._tarea.subtareas];
                                     subtareas[i] = Subtarea(
                                       titulo: subtareas[i].titulo,
@@ -437,7 +441,7 @@ class _DatoTarea extends StatelessWidget {
   /// Resumen:
   /// - Construye una fila accesible de información del detalle de tarea.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final tema = Theme.of(context);
 
     return Padding(
