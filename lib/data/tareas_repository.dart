@@ -1,6 +1,7 @@
 // jsonEncode/jsonDecode para los eventos de Calendar de tareas grupales.
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 
@@ -8,11 +9,14 @@ import '../models/asignatura_model.dart';
 import '../models/tarea_model.dart';
 
 class TareasRepository {
-  TareasRepository({this.fabrica, this.ruta});
+  TareasRepository({this.fabrica, this.ruta, this.uidUsuarioActual});
 
-  static final TareasRepository instancia = TareasRepository();
+  static final TareasRepository instancia = TareasRepository(
+    uidUsuarioActual: () => FirebaseAuth.instance.currentUser?.uid,
+  );
   final DatabaseFactory? fabrica;
   final String? ruta;
+  final String? Function()? uidUsuarioActual;
   Future<Database>? _abriendo;
 
   /// Input:
@@ -46,12 +50,13 @@ class TareasRepository {
     return await proveedor.openDatabase(
       ubicacion,
       options: OpenDatabaseOptions(
-        version: 6,
+        version: 7,
         onCreate: (Database db, int version) async {
           await _crearTablaTareas(db, 'tareas');
           await db.execute(
             'ALTER TABLE tareas ADD COLUMN google_event_id TEXT',
           );
+          await db.execute('ALTER TABLE tareas ADD COLUMN owner_uid TEXT');
           await _crearTablaAsignaturas(db);
           await _crearTablaPreferencias(db);
           await _crearTablaTiempoEstudio(db);
@@ -82,9 +87,35 @@ class TareasRepository {
           if (versionAnterior < 6) {
             await _crearTablasMetasSemanales(db);
           }
+
+          if (versionAnterior < 7) {
+            await db.execute('ALTER TABLE tareas ADD COLUMN owner_uid TEXT');
+            final uid = uidUsuarioActual?.call();
+            if (uid != null) {
+              await db.update('tareas', {
+                'owner_uid': uid,
+              }, where: 'owner_uid IS NULL');
+            }
+          }
         },
       ),
     );
+  }
+
+  String _condicionPropietario(String uid) => 'owner_uid = ?';
+
+  List<Object?> _argumentosPropietario(String uid) => [uid];
+
+  Future<String> _prepararPropietarioTareas(Database db) async {
+    final uid = uidUsuarioActual?.call();
+    if (uid == null) {
+      throw StateError(
+        'Se requiere una cuenta iniciada para acceder a tareas.',
+      );
+    }
+
+    await db.update('tareas', {'owner_uid': uid}, where: 'owner_uid IS NULL');
+    return uid;
   }
 
   /// Input:
@@ -248,8 +279,11 @@ class TareasRepository {
   /// - Lee y convierte todas las filas de tareas a modelos.
   Future<List<Tarea>> listar() async {
     Database db = await database;
+    final uid = await _prepararPropietarioTareas(db);
     List<Map<String, dynamic>> filas = await db.query(
       'tareas',
+      where: _condicionPropietario(uid),
+      whereArgs: _argumentosPropietario(uid),
       orderBy: 'fecha_limite ASC, id DESC',
     );
 
@@ -270,10 +304,11 @@ class TareasRepository {
   /// - Consulta una tarea por su identificador.
   Future<Tarea?> obtener(int id) async {
     Database db = await database;
+    final uid = await _prepararPropietarioTareas(db);
     List<Map<String, dynamic>> filas = await db.query(
       'tareas',
-      where: 'id = ?',
-      whereArgs: [id],
+      where: '${_condicionPropietario(uid)} AND id = ?',
+      whereArgs: [..._argumentosPropietario(uid), id],
     );
 
     if (filas.isEmpty) {
@@ -309,17 +344,21 @@ class TareasRepository {
     }
 
     Database db = await database;
+    final uid = await _prepararPropietarioTareas(db);
 
     if (tarea.id == null) {
-      int idGenerado = await db.insert('tareas', tarea.toMap());
+      int idGenerado = await db.insert('tareas', {
+        ...tarea.toMap(),
+        'owner_uid': uid,
+      });
 
       return tarea.copyWith(id: idGenerado);
     } else {
       int cambios = await db.update(
         'tareas',
         tarea.toMap(),
-        where: 'id = ?',
-        whereArgs: [tarea.id],
+        where: '${_condicionPropietario(uid)} AND id = ?',
+        whereArgs: [..._argumentosPropietario(uid), tarea.id],
       );
 
       if (cambios == 0) {
@@ -338,7 +377,12 @@ class TareasRepository {
   /// - Borra de la base de datos la tarea indicada.
   Future<void> eliminar(int id) async {
     Database db = await database;
-    await db.delete('tareas', where: 'id = ?', whereArgs: [id]);
+    final uid = await _prepararPropietarioTareas(db);
+    await db.delete(
+      'tareas',
+      where: '${_condicionPropietario(uid)} AND id = ?',
+      whereArgs: [..._argumentosPropietario(uid), id],
+    );
   }
 
   /// Input:
@@ -411,11 +455,12 @@ class TareasRepository {
   /// - Consulta el ID remoto vinculado a la tarea.
   Future<String?> idEventoCalendar(int tareaId) async {
     final db = await database;
+    final uid = await _prepararPropietarioTareas(db);
     final filas = await db.query(
       'tareas',
       columns: ['google_event_id'],
-      where: 'id = ?',
-      whereArgs: [tareaId],
+      where: '${_condicionPropietario(uid)} AND id = ?',
+      whereArgs: [..._argumentosPropietario(uid), tareaId],
       limit: 1,
     );
     if (filas.isEmpty) return null;
@@ -431,11 +476,12 @@ class TareasRepository {
   /// - Guarda o limpia la relación entre tarea y evento de Calendar.
   Future<void> guardarIdEventoCalendar(int tareaId, String? eventoId) async {
     final db = await database;
+    final uid = await _prepararPropietarioTareas(db);
     await db.update(
       'tareas',
       {'google_event_id': eventoId},
-      where: 'id = ?',
-      whereArgs: [tareaId],
+      where: '${_condicionPropietario(uid)} AND id = ?',
+      whereArgs: [..._argumentosPropietario(uid), tareaId],
     );
   }
 

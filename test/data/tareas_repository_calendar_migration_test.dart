@@ -53,14 +53,22 @@ void main() {
     );
     await dbAntigua.close();
 
+    String? uidActual;
     final repositorio = TareasRepository(
       fabrica: databaseFactoryFfi,
       ruta: ruta,
+      uidUsuarioActual: () => uidActual,
     );
 
+    await repositorio.database;
+    await expectLater(repositorio.obtener(1), throwsA(isA<StateError>()));
+    uidActual = 'cuenta-a';
     final tarea = await repositorio.obtener(1);
     expect(tarea?.titulo, 'Entrega');
     expect(tarea?.importancia, 3);
+    uidActual = 'cuenta-b';
+    expect(await repositorio.obtener(1), isNull);
+    uidActual = 'cuenta-a';
     expect(await repositorio.idEventoCalendar(1), isNull);
     expect(await repositorio.sincronizacionCalendarHabilitada(), isFalse);
 
