@@ -169,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen>{
                   children: [
                     Image.asset(
                       "assets/images/logo.png",
-                      height: 160,
+                      height: 200,
                       semanticLabel: "PomoGrid",
                     ),
                     const SizedBox(height: 32),

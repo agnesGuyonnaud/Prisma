@@ -99,7 +99,6 @@ class MainApp extends StatelessWidget {
               ? const LoginScreen()
               : HomeScreen(
                   repositorio: repositorio,
-                  notifLaunchDetails: notifLaunchDetails,
                 );
         },
       ),
