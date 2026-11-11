@@ -616,7 +616,7 @@ class _GruposScreenState extends State<GruposScreen> {
             )
           : null,
 
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
       bottomNavigationBar: ColoredBox(
         color: colores.surfaceContainer,

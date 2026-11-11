@@ -14,13 +14,13 @@ import '../utils/fecha_tarea.dart';
 /// - `String`: hasta dos iniciales en mayúscula, o `"?"` si está vacío.
 /// Resumen:
 /// - Obtiene las iniciales que se muestran en los avatares.
-String iniciales(String nombre){
+String iniciales(String nombre) {
   final partes = nombre.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-  if(partes.isEmpty) return '?';
+  if (partes.isEmpty) return '?';
   return partes.take(2).map((p) => p[0].toUpperCase()).join();
 }
 
-class TareaGrupalMini extends StatelessWidget{
+class TareaGrupalMini extends StatelessWidget {
   const TareaGrupalMini({
     super.key,
     required this.tarea,
@@ -39,10 +39,10 @@ class TareaGrupalMini extends StatelessWidget{
   /// Output:
   /// - `Widget`: tarjeta de la tarea grupal.
   /// Resumen:
-  /// - Construye la tarjeta con barra de color, asignatura, grupo, fecha,
+  /// - Construye la tarjeta con asignatura, grupo, fecha,
   ///   estado, progreso de subtareas y colaboradores.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
     final color = colorAsignatura ?? colores.secondaryContainer;
@@ -52,7 +52,7 @@ class TareaGrupalMini extends StatelessWidget{
         ? Colors.white
         : Colors.black;
     final detalle = [
-      if(grupo != null) grupo!.nombre,
+      if (grupo != null) grupo!.nombre,
       fechaTarea(tarea.fechaLimite, corta: true),
     ].join(' · ');
 
@@ -61,97 +61,84 @@ class TareaGrupalMini extends StatelessWidget{
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(width: 6, color: color),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              tarea.titulo,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: tema.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Chip(
-                              backgroundColor: color,
-                              side: BorderSide.none,
-                              visualDensity: VisualDensity.compact,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              labelStyle: tema.textTheme.labelMedium?.copyWith(
-                                color: colorTexto,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              label: Text(
-                                tarea.asignatura,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                        ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      tarea.titulo,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: tema.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        detalle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Chip(
+                      backgroundColor: color,
+                      side: BorderSide.none,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      labelStyle: tema.textTheme.labelMedium?.copyWith(
+                        color: colorTexto,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      label: Text(
+                        tarea.asignatura,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: tema.textTheme.bodySmall?.copyWith(
-                          color: colores.onSurfaceVariant,
-                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          EstadoEtiqueta(estado: tarea.estado),
-                          if(tarea.subtareas.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.checklist,
-                              size: 16,
-                              color: colores.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${tarea.subtareasCompletadas}/${tarea.subtareas.length}',
-                              style: tema.textTheme.labelMedium?.copyWith(
-                                color: colores.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                          const Spacer(),
-                          if(grupo != null) ...[
-                            Text(
-                              'Colaboradores',
-                              style: tema.textTheme.labelSmall?.copyWith(
-                                color: colores.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            AvataresIntegrantes(
-                              nombres: grupo!.nombresIntegrantes,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                detalle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tema.textTheme.bodySmall?.copyWith(
+                  color: colores.onSurfaceVariant,
                 ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  EstadoEtiqueta(estado: tarea.estado),
+                  if (tarea.subtareas.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.checklist,
+                      size: 16,
+                      color: colores.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${tarea.subtareasCompletadas}/${tarea.subtareas.length}',
+                      style: tema.textTheme.labelMedium?.copyWith(
+                        color: colores.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  if (grupo != null) ...[
+                    Text(
+                      'Colaboradores',
+                      style: tema.textTheme.labelSmall?.copyWith(
+                        color: colores.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    AvataresIntegrantes(nombres: grupo!.nombresIntegrantes),
+                  ],
+                ],
               ),
             ],
           ),
@@ -161,7 +148,7 @@ class TareaGrupalMini extends StatelessWidget{
   }
 }
 
-class EstadoEtiqueta extends StatelessWidget{
+class EstadoEtiqueta extends StatelessWidget {
   const EstadoEtiqueta({super.key, required this.estado});
 
   final EstadoTarea estado;
@@ -173,10 +160,10 @@ class EstadoEtiqueta extends StatelessWidget{
   /// Resumen:
   /// - Muestra el estado con un color distinto para cada valor.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
-    final (fondo, texto, icono) = switch(estado){
+    final (fondo, texto, icono) = switch (estado) {
       EstadoTarea.pendiente => (
         colores.surfaceContainerHighest,
         colores.onSurfaceVariant,
@@ -215,8 +202,12 @@ class EstadoEtiqueta extends StatelessWidget{
   }
 }
 
-class AvataresIntegrantes extends StatelessWidget{
-  const AvataresIntegrantes({super.key, required this.nombres, this.maximo = 3});
+class AvataresIntegrantes extends StatelessWidget {
+  const AvataresIntegrantes({
+    super.key,
+    required this.nombres,
+    this.maximo = 3,
+  });
 
   final List<String> nombres;
   final int maximo;
@@ -229,7 +220,7 @@ class AvataresIntegrantes extends StatelessWidget{
   /// - Muestra las iniciales de hasta `maximo` integrantes y un contador
   ///   con los restantes.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
     final visibles = nombres.take(maximo).toList();
@@ -243,7 +234,7 @@ class AvataresIntegrantes extends StatelessWidget{
     /// - `Widget`: avatar circular con borde.
     /// Resumen:
     /// - Construye un avatar pequeño de la fila.
-    Widget avatar(String texto, Color fondo, Color frente){
+    Widget avatar(String texto, Color fondo, Color frente) {
       return Container(
         padding: const EdgeInsets.all(1.5),
         decoration: BoxDecoration(
@@ -273,7 +264,7 @@ class AvataresIntegrantes extends StatelessWidget{
         height: 27,
         child: Stack(
           children: [
-            for(var i = 0; i < visibles.length; i++)
+            for (var i = 0; i < visibles.length; i++)
               Positioned(
                 left: i * 18,
                 child: avatar(
@@ -282,7 +273,7 @@ class AvataresIntegrantes extends StatelessWidget{
                   colores.onSecondaryContainer,
                 ),
               ),
-            if(restantes > 0)
+            if (restantes > 0)
               Positioned(
                 left: visibles.length * 18,
                 child: avatar(

@@ -31,7 +31,7 @@ import '../widgets/tarea_grupal_mini.dart';
 // Formulario para editar la tarea.
 import 'tarea_grupal_formulario.dart';
 
-class TareaGrupalScreen extends StatefulWidget{
+class TareaGrupalScreen extends StatefulWidget {
   const TareaGrupalScreen({
     super.key,
     required this.tarea,
@@ -51,7 +51,7 @@ class TareaGrupalScreen extends StatefulWidget{
   State<TareaGrupalScreen> createState() => _TareaGrupalScreenState();
 }
 
-class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
+class _TareaGrupalScreenState extends State<TareaGrupalScreen> {
   late final GruposRepository _grupos;
   late final Stream<TareaGrupal?> _cambios;
   final _nota = TextEditingController();
@@ -60,14 +60,14 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   double _progresoSubida = 0;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _grupos = widget.grupos ?? GruposRepository.instancia;
     _cambios = _grupos.tarea(widget.tarea.grupo, widget.tarea.id!);
   }
 
   @override
-  void dispose(){
+  void dispose() {
     _nota.dispose();
     super.dispose();
   }
@@ -78,7 +78,7 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// - `void`: muestra un aviso en la pantalla.
   /// Resumen:
   /// - Reemplaza el aviso actual por uno nuevo.
-  void _mostrarMensaje(String mensaje){
+  void _mostrarMensaje(String mensaje) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(mensaje)));
@@ -92,30 +92,30 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// Resumen:
   /// - Bloquea la pantalla mientras corre la acción y muestra el error real
   ///   (validación, permisos de Firebase u otro) si falla.
-  Future<bool> _ejecutar(Future<void> Function() accion, String error) async{
-    if(_guardando) return false;
+  Future<bool> _ejecutar(Future<void> Function() accion, String error) async {
+    if (_guardando) return false;
     setState(() => _guardando = true);
-    try{
+    try {
       await accion();
       return true;
-    } on ArgumentError catch(e){
-      if(mounted) _mostrarMensaje(e.message.toString());
-    } on StateError catch(e){
-      if(mounted) _mostrarMensaje(e.message);
-    } on FirebaseException catch(e){
+    } on ArgumentError catch (e) {
+      if (mounted) _mostrarMensaje(e.message.toString());
+    } on StateError catch (e) {
+      if (mounted) _mostrarMensaje(e.message);
+    } on FirebaseException catch (e) {
       debugPrint('Firebase ${e.code}: ${e.message}');
-      if(mounted){
+      if (mounted) {
         _mostrarMensaje(
           e.code == 'permission-denied'
               ? 'Firebase rechazó la operación por permisos. Revisa que las reglas de Firestore estén publicadas.'
               : '$error (${e.code})',
         );
       }
-    } catch(e){
+    } catch (e) {
       debugPrint('Error en tarea grupal: $e');
-      if(mounted) _mostrarMensaje(error);
-    } finally{
-      if(mounted) setState(() => _guardando = false);
+      if (mounted) _mostrarMensaje(error);
+    } finally {
+      if (mounted) setState(() => _guardando = false);
     }
     return false;
   }
@@ -126,7 +126,7 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// - `Future<void>`: termina al cerrar el formulario.
   /// Resumen:
   /// - Abre el formulario de edición; los cambios llegan por el stream.
-  Future<void> _editar(TareaGrupal tarea) async{
+  Future<void> _editar(TareaGrupal tarea) async {
     await Navigator.of(context).push<TareaGrupal>(
       MaterialPageRoute(
         builder: (_) => TareaGrupalFormulario(
@@ -145,7 +145,7 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// - `Future<void>`: termina al cancelar o eliminar.
   /// Resumen:
   /// - Pide confirmación, borra la tarea para todo el grupo y vuelve atrás.
-  Future<void> _eliminar(TareaGrupal tarea) async{
+  Future<void> _eliminar(TareaGrupal tarea) async {
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -169,12 +169,12 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
         ],
       ),
     );
-    if(confirmado != true || !mounted) return;
+    if (confirmado != true || !mounted) return;
     final listo = await _ejecutar(
       () => _grupos.eliminarTarea(tarea),
       'No se pudo eliminar la tarea. Inténtalo otra vez.',
     );
-    if(listo && mounted) Navigator.of(context).pop();
+    if (listo && mounted) Navigator.of(context).pop();
   }
 
   /// Input:
@@ -183,12 +183,12 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// - `Future<void>`: termina al guardar o cancelar.
   /// Resumen:
   /// - Pide nombre y enlace en un diálogo y lo guarda en la tarea.
-  Future<void> _agregarDocumento(TareaGrupal tarea) async{
+  Future<void> _agregarDocumento(TareaGrupal tarea) async {
     final documento = await showDialog<Documento>(
       context: context,
       builder: (_) => const _DialogoDocumento(),
     );
-    if(documento == null || !mounted) return;
+    if (documento == null || !mounted) return;
     await _ejecutar(
       () => _grupos.agregarDocumento(tarea, documento),
       'No se pudo añadir el documento.',
@@ -202,36 +202,36 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// Resumen:
   /// - Abre el selector de archivos, revisa el tamaño y sube el archivo
   ///   mostrando el progreso.
-  Future<void> _subirArchivo(TareaGrupal tarea) async{
+  Future<void> _subirArchivo(TareaGrupal tarea) async {
     final archivo = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: GruposRepository.extensionesArchivo,
     );
-    if(archivo == null || !mounted) return;
+    if (archivo == null || !mounted) return;
     final tamano = await archivo.length();
-    if(tamano != null && tamano > GruposRepository.tamanoMaximo){
-      if(mounted) _mostrarMensaje('El archivo supera el máximo de 5 MB.');
+    if (tamano != null && tamano > GruposRepository.tamanoMaximo) {
+      if (mounted) _mostrarMensaje('El archivo supera el máximo de 5 MB.');
       return;
     }
-    if(!mounted) return;
-    setState((){
+    if (!mounted) return;
+    setState(() {
       _subiendo = archivo.name;
       _progresoSubida = 0;
     });
-    final listo = await _ejecutar(() async{
+    final listo = await _ejecutar(() async {
       final bytes = await archivo.readAsBytes();
       await _grupos.subirArchivo(
         tarea,
         nombre: archivo.name,
         bytes: bytes,
-        onProgreso: (progreso){
-          if(mounted) setState(() => _progresoSubida = progreso);
+        onProgreso: (progreso) {
+          if (mounted) setState(() => _progresoSubida = progreso);
         },
       );
     }, 'No se pudo subir el archivo. Revisa tu conexión.');
-    if(!mounted) return;
+    if (!mounted) return;
     setState(() => _subiendo = null);
-    if(listo) _mostrarMensaje('“${archivo.name}” compartido con el grupo.');
+    if (listo) _mostrarMensaje('“${archivo.name}” compartido con el grupo.');
   }
 
   /// Input:
@@ -241,21 +241,21 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// - `Future<void>`: termina al abrirlo o mostrar un error.
   /// Resumen:
   /// - Abre los archivos en el teléfono y los enlaces en el navegador.
-  Future<void> _abrirDocumento(TareaGrupal tarea, Documento documento) async{
-    if(documento.esArchivo){
+  Future<void> _abrirDocumento(TareaGrupal tarea, Documento documento) async {
+    if (documento.esArchivo) {
       await _abrirArchivo(tarea, documento);
       return;
     }
     var abierto = false;
-    try{
+    try {
       abierto = await launchUrl(
         Uri.parse(documento.enlace),
         mode: LaunchMode.externalApplication,
       );
-    } catch(_){
+    } catch (_) {
       abierto = false;
     }
-    if(!abierto && mounted){
+    if (!abierto && mounted) {
       _mostrarMensaje('No se pudo abrir “${documento.titulo}”.');
     }
   }
@@ -268,9 +268,9 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// Resumen:
   /// - Descarga el archivo a la carpeta temporal (si no estaba guardado)
   ///   y lo abre con la app correspondiente del teléfono.
-  Future<void> _abrirArchivo(TareaGrupal tarea, Documento documento) async{
+  Future<void> _abrirArchivo(TareaGrupal tarea, Documento documento) async {
     late final File archivo;
-    final listo = await _ejecutar(() async{
+    final listo = await _ejecutar(() async {
       final carpeta = Directory(
         '${(await getTemporaryDirectory()).path}/archivos/${documento.ruta}',
       );
@@ -278,18 +278,18 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
       if(await archivo.exists() && await archivo.length() == documento.tamano){
         return;
       }
-      if(mounted) _mostrarMensaje('Descargando “${documento.titulo}”…');
+      if (mounted) _mostrarMensaje('Descargando “${documento.titulo}”…');
       final bytes = await _grupos.descargarArchivo(tarea, documento);
       await carpeta.create(recursive: true);
       await archivo.writeAsBytes(bytes, flush: true);
     }, 'No se pudo descargar el archivo. Revisa tu conexión.');
-    if(!listo || !mounted) return;
+    if (!listo || !mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     final resultado = await OpenFilex.open(archivo.path);
-    if(!mounted) return;
-    if(resultado.type == ResultType.noAppToOpen){
+    if (!mounted) return;
+    if (resultado.type == ResultType.noAppToOpen) {
       _mostrarMensaje('No tienes una app para abrir archivos .${documento.extension}.');
-    } else if(resultado.type != ResultType.done){
+    } else if (resultado.type != ResultType.done) {
       _mostrarMensaje('No se pudo abrir “${documento.titulo}”.');
     }
   }
@@ -300,9 +300,9 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// - `Future<void>`: termina al copiar.
   /// Resumen:
   /// - Copia el enlace al portapapeles y avisa al usuario.
-  Future<void> _copiarEnlace(Documento documento) async{
+  Future<void> _copiarEnlace(Documento documento) async {
     await Clipboard.setData(ClipboardData(text: documento.enlace));
-    if(mounted) _mostrarMensaje('Enlace de “${documento.titulo}” copiado.');
+    if (mounted) _mostrarMensaje('Enlace de “${documento.titulo}” copiado.');
   }
 
   /// Input:
@@ -311,9 +311,9 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// - `String`: tamaño legible en B, KB o MB.
   /// Resumen:
   /// - Formatea el tamaño que se muestra bajo cada archivo.
-  String _formatearTamano(int bytes){
-    if(bytes < 1024) return '$bytes B';
-    if(bytes < 1024 * 1024) return '${(bytes / 1024).round()} KB';
+  String _formatearTamano(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).round()} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1).replaceAll('.', ',')} MB';
   }
 
@@ -323,9 +323,9 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// - `IconData`: ícono según el tipo de archivo.
   /// Resumen:
   /// - Elige el ícono de PDF, texto, presentación, planilla, imagen o enlace.
-  IconData _iconoDocumento(Documento documento){
-    if(!documento.esArchivo) return Icons.link;
-    return switch(documento.extension){
+  IconData _iconoDocumento(Documento documento) {
+    if (!documento.esArchivo) return Icons.link;
+    return switch (documento.extension) {
       'pdf' => Icons.picture_as_pdf_outlined,
       'doc' || 'docx' || 'txt' => Icons.article_outlined,
       'ppt' || 'pptx' => Icons.slideshow_outlined,
@@ -342,16 +342,16 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// - `Future<void>`: termina al publicar o si el texto está vacío.
   /// Resumen:
   /// - Publica la nota escrita y limpia el campo de texto.
-  Future<void> _enviarNota(TareaGrupal tarea) async{
+  Future<void> _enviarNota(TareaGrupal tarea) async {
     final texto = _nota.text;
-    if(texto.trim().isEmpty) return;
+    if (texto.trim().isEmpty) return;
     final listo = await _ejecutar(
       () => _grupos.agregarNota(tarea, texto),
       'No se pudo publicar la nota.',
     );
-    if(listo){
+    if (listo) {
       _nota.clear();
-      if(mounted) FocusScope.of(context).unfocus();
+      if (mounted) FocusScope.of(context).unfocus();
     }
   }
 
@@ -363,11 +363,11 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// - Escucha la tarea en tiempo real y construye la barra superior con
   ///   sus acciones y el contenido (o un aviso si fue eliminada).
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return StreamBuilder<TareaGrupal?>(
       stream: _cambios,
       initialData: widget.tarea,
-      builder: (context, snapshot){
+      builder: (context, snapshot) {
         final tarea = snapshot.data;
         return PopScope(
           canPop: !_guardando,
@@ -384,7 +384,7 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
                     : () => Navigator.of(context).maybePop(),
               ),
               actions: [
-                if(tarea != null) ...[
+                if (tarea != null) ...[
                   IconButton(
                     tooltip: 'Editar',
                     onPressed: _guardando ? null : () => _editar(tarea),
@@ -442,7 +442,7 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   /// Resumen:
   /// - Construye la información, el estado, los colaboradores y las
   ///   secciones de subtareas, documentos y notas.
-  Widget _construirDetalle(BuildContext context, TareaGrupal tarea){
+  Widget _construirDetalle(BuildContext context, TareaGrupal tarea) {
     final tema = Theme.of(context);
     final colores = tema.colorScheme;
     final textos = tema.textTheme;
@@ -522,7 +522,7 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
                           child: SegmentedButton<EstadoTarea>(
                             showSelectedIcon: false,
                             segments: [
-                              for(final estado in EstadoTarea.values)
+                              for (final estado in EstadoTarea.values)
                                 ButtonSegment(
                                   value: estado,
                                   label: Text(
@@ -558,6 +558,11 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
                           children: [
                             for(final nombre in widget.grupo.nombresIntegrantes)
                               Chip(
+                                backgroundColor: colores.surfaceContainerLow,
+                                side: BorderSide.none,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                 avatar: CircleAvatar(
                                   backgroundColor: colores.secondaryContainer,
                                   child: Text(
@@ -581,7 +586,7 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
                   icono: Icons.checklist,
                   titulo: 'Subtareas',
                   children: [
-                    if(tarea.subtareas.isEmpty)
+                    if (tarea.subtareas.isEmpty)
                       Text(
                         'Esta tarea no tiene subtareas.',
                         style: textos.bodyMedium?.copyWith(
@@ -602,7 +607,7 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
                       ),
                       const SizedBox(height: 4),
                     ],
-                    for(var i = 0; i < tarea.subtareas.length; i++)
+                    for (var i = 0; i < tarea.subtareas.length; i++)
                       CheckboxListTile(
                         contentPadding: EdgeInsets.zero,
                         controlAffinity: ListTileControlAffinity.leading,
@@ -633,14 +638,14 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
                   icono: Icons.folder_shared_outlined,
                   titulo: 'Documentos',
                   children: [
-                    if(tarea.documentos.isEmpty && _subiendo == null)
+                    if (tarea.documentos.isEmpty && _subiendo == null)
                       Text(
                         'Sube archivos (PDF, Word, PowerPoint, Excel, texto o imágenes de hasta 5 MB) o comparte enlaces del trabajo.',
                         style: textos.bodyMedium?.copyWith(
                           color: colores.onSurfaceVariant,
                         ),
                       ),
-                    for(final documento in tarea.documentos)
+                    for (final documento in tarea.documentos)
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
@@ -659,7 +664,7 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
                           documento.esArchivo
                               ? [
                                   documento.extension.toUpperCase(),
-                                  if(documento.tamano != null)
+                                  if (documento.tamano != null)
                                     _formatearTamano(documento.tamano!),
                                 ].join(' · ')
                               : documento.enlace,
@@ -686,7 +691,7 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
                           icon: const Icon(Icons.close),
                         ),
                       ),
-                    if(_subiendo != null)
+                    if (_subiendo != null)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Column(
@@ -736,14 +741,14 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
                   icono: Icons.sticky_note_2_outlined,
                   titulo: 'Notas',
                   children: [
-                    if(tarea.notas.isEmpty)
+                    if (tarea.notas.isEmpty)
                       Text(
                         'Deja notas para coordinar el trabajo con tu grupo.',
                         style: textos.bodyMedium?.copyWith(
                           color: colores.onSurfaceVariant,
                         ),
                       ),
-                    for(final nota in tarea.notas)
+                    for (final nota in tarea.notas)
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
@@ -784,14 +789,17 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
                       maxLength: 500,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
+                        labelText: 'Nota para el grupo',
                         hintText: 'Escribe una nota para el grupo',
-                        border: const OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         suffixIcon: IconButton(
                           tooltip: 'Publicar nota',
                           onPressed: _guardando
                               ? null
                               : () => _enviarNota(tarea),
-                          icon: const Icon(Icons.send),
+                          icon: const Icon(Icons.send_outlined),
                         ),
                       ),
                     ),
@@ -806,7 +814,7 @@ class _TareaGrupalScreenState extends State<TareaGrupalScreen>{
   }
 }
 
-class _Seccion extends StatelessWidget{
+class _Seccion extends StatelessWidget {
   const _Seccion({
     required this.icono,
     required this.titulo,
@@ -824,7 +832,7 @@ class _Seccion extends StatelessWidget{
   /// Resumen:
   /// - Agrupa el contenido de una sección del detalle.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final tema = Theme.of(context);
 
     return Card.outlined(
@@ -850,7 +858,7 @@ class _Seccion extends StatelessWidget{
   }
 }
 
-class _Dato extends StatelessWidget{
+class _Dato extends StatelessWidget {
   const _Dato({
     required this.icono,
     required this.etiqueta,
@@ -868,7 +876,7 @@ class _Dato extends StatelessWidget{
   /// Resumen:
   /// - Construye una fila de información del detalle.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final tema = Theme.of(context);
 
     return Padding(
@@ -898,20 +906,20 @@ class _Dato extends StatelessWidget{
   }
 }
 
-class _DialogoDocumento extends StatefulWidget{
+class _DialogoDocumento extends StatefulWidget {
   const _DialogoDocumento();
 
   @override
   State<_DialogoDocumento> createState() => _DialogoDocumentoState();
 }
 
-class _DialogoDocumentoState extends State<_DialogoDocumento>{
+class _DialogoDocumentoState extends State<_DialogoDocumento> {
   final _formulario = GlobalKey<FormState>();
   final _titulo = TextEditingController();
   final _enlace = TextEditingController();
 
   @override
-  void dispose(){
+  void dispose() {
     _titulo.dispose();
     _enlace.dispose();
     super.dispose();
@@ -932,8 +940,8 @@ class _DialogoDocumentoState extends State<_DialogoDocumento>{
   /// - `void`: cierra el diálogo con el documento escrito.
   /// Resumen:
   /// - Valida los campos y devuelve el nombre y enlace.
-  void _aceptar(){
-    if(!_formulario.currentState!.validate()) return;
+  void _aceptar() {
+    if (!_formulario.currentState!.validate()) return;
     Navigator.of(context).pop(
       Documento(titulo: _titulo.text.trim(), enlace: _enlace.text.trim()),
     );
@@ -946,7 +954,7 @@ class _DialogoDocumentoState extends State<_DialogoDocumento>{
   /// Resumen:
   /// - Construye el formulario con nombre y enlace del documento.
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return AlertDialog(
       icon: const Icon(Icons.add_link),
       title: const Text('Compartir enlace'),
