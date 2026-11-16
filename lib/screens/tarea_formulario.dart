@@ -12,6 +12,18 @@ import '../utils/task_notif_service.dart';
 
 import 'package:timezone/timezone.dart' as tz;
 
+enum OpcionNotificacion {
+  unDia('1 día antes', '1 día', Duration(days: 1)),
+  tresDias('3 días antes', '3 días', Duration(days: 3)),
+  unaSemana('1 semana antes', '1 semana', Duration(days: 7)),
+  ninguna('Sin notificación', '<noDelay>', null);
+
+  const OpcionNotificacion(this.etiqueta, this.delay, this.antelacion);
+  final String etiqueta;
+  final String delay;
+  final Duration? antelacion;
+}
+
 class TareaFormulario extends StatefulWidget {
   const TareaFormulario({super.key, required this.repositorio, this.tarea});
 
@@ -153,6 +165,22 @@ class _TareaFormularioState extends State<TareaFormulario> {
     );
   }
 
+  Future<OpcionNotificacion?> _elegirNotificacion() {
+    return showDialog<OpcionNotificacion>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('¿Cuándo quieres que te avisemos?'),
+        children: [
+          for (final opcion in OpcionNotificacion.values)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(opcion),
+              child: Text(opcion.etiqueta),
+            ),
+        ],
+      ),
+    );
+  }
+
   /// Input:
   /// - No recibe parámetros; obtiene los valores de los controles del formulario.
   /// Output:
@@ -162,6 +190,12 @@ class _TareaFormularioState extends State<TareaFormulario> {
   Future<void> _guardar() async {
     if (_guardando || !_formulario.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
+
+    // Popup : eleje el momento de la notification
+    final opcion = await _elegirNotificacion();
+    // cerando la popup -> cancel
+    if (opcion == null || !mounted) return;
+
     setState(() => _guardando = true);
     final tarea = Tarea(
       id: widget.tarea?.id,
@@ -197,44 +231,55 @@ class _TareaFormularioState extends State<TareaFormulario> {
         }
       }
 
-      //notifies the user 1 day before fechaLimite
+      //notifies the user segun su choice
 
       if (guardada.id != null) {
         int idNotif = -1 * guardada.id!;
-        String titleTarea = tarea.titulo;
-        final scheduledNotifDate = tz.TZDateTime.from(
-          tarea.fechaLimite,
-          tz.local,
-        ).subtract(const Duration(days: 1));
+        await LocalNotificationService.cancel(id: idNotif);
+        final antelacion = opcion.antelacion;
 
-        if (scheduledNotifDate.isAfter(tz.TZDateTime.now(tz.local))) {
-          await LocalNotificationService.plan(
-            id: idNotif,
-            title: "Don't forget it !",
-            body: "Tarea $titleTarea is due in 1 day",
-            scheduledNotifDate: scheduledNotifDate,
-          );
-          final String waitingTimeBeforeNotif = scheduledNotifDate
-              .difference(tz.TZDateTime.now(tz.local))
-              .toString();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Esa tarea generara notificacion en $waitingTimeBeforeNotif',
-              ),
-            ),
-          );
+        if (antelacion == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Esta tarea no te notificara')),
+            );
+          }
         } else {
-          final String waitingTimeBeforeNotif = scheduledNotifDate
-              .difference(tz.TZDateTime.now(tz.local))
-              .toString();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Esa tarea no generara notificacion (notificacion dentro de $waitingTimeBeforeNotif)',
+          final ahora = tz.TZDateTime.now(tz.local);
+          final scheduledNotifDate = tz.TZDateTime.from(
+            tarea.fechaLimite,
+            tz.local,
+          ).subtract(antelacion);
+
+          String titleTarea = tarea.titulo;
+
+          if (scheduledNotifDate.isAfter(tz.TZDateTime.now(tz.local))) {
+            await LocalNotificationService.plan(
+              id: idNotif,
+              title: "No la olblides !",
+              body:
+                  "Tarea $titleTarea debe entregarse en ${opcion.delay.toLowerCase()}",
+              scheduledNotifDate: scheduledNotifDate,
+            );
+            final String waitingTimeBeforeNotif = scheduledNotifDate
+                .difference(tz.TZDateTime.now(tz.local))
+                .toString();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Esa tarea generara notificacion en $waitingTimeBeforeNotif',
+                ),
               ),
-            ),
-          );
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Esa tarea no generara notificacion (la fecha ya pasó)',
+                ),
+              ),
+            );
+          }
         }
       }
 

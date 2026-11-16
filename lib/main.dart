@@ -99,9 +99,7 @@ class MainApp extends StatelessWidget {
           }
           return snapshot.data == null
               ? const LoginScreen()
-              : HomeScreen(
-                  repositorio: repositorio,
-                );
+              : HomeScreen(repositorio: repositorio);
         },
       ),
     );
